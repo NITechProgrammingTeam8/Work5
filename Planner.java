@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.StringTokenizer;
+import java.util.Arrays;
+import java.util.List;
 
 public class Planner {
 	ArrayList<Operator> operators;
@@ -11,6 +13,7 @@ public class Planner {
 	ArrayList<Operator> plan;
 	ArrayList<String> goalList;
 	ArrayList<String> initialState;
+	Attributions attributions;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -19,8 +22,14 @@ public class Planner {
 	Planner() {
 		rand = new Random();
 		initOperators();
+		attributions = new Attributions();
 		goalList = initGoalList();
 		initialState = initInitialState();
+		/*
+		ゴールと初期状態に属性をしてする場合
+		goalList = attributions.editStatementList(initAttributeGoalList());
+		initialState = attributions.editStatementList(initAttributeInitialState());
+		*/
 	}
 
 	public void start() {
@@ -181,7 +190,17 @@ public class Planner {
 	private ArrayList<String> initGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("B on C");
-		goalList.add("A on B");
+        goalList.add("A on B");
+		return goalList;
+	}
+
+	private ArrayList<String> initAttributeGoalList() {
+		ArrayList<String> goalList = new ArrayList<String>();
+		goalList.add("green on ball");
+		goalList.add("blue on pyramid");
+		for(String goal: goalList) {
+			System.out.println("========== goal:"+goal+" ==========");
+		}
 		return goalList;
 	}
 
@@ -195,6 +214,22 @@ public class Planner {
 		initialState.add("ontable B");
 		initialState.add("ontable C");
 		initialState.add("handEmpty");
+		return initialState;
+	}
+
+	private ArrayList<String> initAttributeInitialState() {
+		ArrayList<String> initialState = new ArrayList<String>();
+		initialState.add("clear blue");
+		initialState.add("clear green");
+		initialState.add("clear red");
+
+		initialState.add("ontable box");
+		initialState.add("ontable pyramid");
+		initialState.add("ontable ball");
+		initialState.add("handEmpty");
+		for(String state: initialState) {
+			System.out.println("---------- initInitialState:"+state+" ----------");
+		}
 		return initialState;
 	}
 
@@ -589,4 +624,71 @@ class Unifier {
 		return str1.startsWith("?");
 	}
 
+}
+
+class Attributions {
+	// HashMap<String, List<String>> attributions = new HashMap();
+	HashMap<String, String> attributions =  new HashMap();
+	List<String> rules = new ArrayList();
+
+	// デフォルト用コンストラクタ
+	public Attributions() {
+		rules.add("A is blue");
+        rules.add("A is box");
+        rules.add("B is green");
+        rules.add("B is pyramid");
+        rules.add("C is red");
+		rules.add("C is ball");
+		for(String rule: rules) {
+			addAttribution(rule);
+		}
+	}
+
+	// 自然言語用コンストラクタ
+	public Attributions(List<String> rules) {
+		this.rules = rules;
+		for(String rule: rules) {
+			addAttribution(rule);
+		}
+	}
+
+	// ルール分割済み用コンストラクタ
+	public Attributions(HashMap<String, String> attributions) {
+		this.attributions = attributions;
+	}
+
+	// 属性追加メソッド
+	void addAttribution(String attributionState) {
+		List<String> stateList = Arrays.asList(attributionState.split(" "));
+		if(stateList.get(1).equals("is")) {
+			attributions.put(stateList.get(2), stateList.get(0));
+		}
+	}
+
+	// 属性があるか否かの判定
+	Boolean existAttribute(String token) {
+		return attributions.containsKey(token);
+	}
+
+	ArrayList<String> editStatementList(ArrayList<String> statementList) {
+		System.out.println("++++++ EditStatement ++++++");
+		ArrayList<String> newStatementList = new ArrayList();
+		for (String statement: statementList) {
+			List<String> tokens = Arrays.asList(statement.split(" "));
+			String newStatement = "";
+			for(int tokenNum = 0; tokenNum < tokens.size(); tokenNum++) {
+				String token = tokens.get(tokenNum);
+				if(attributions.containsKey(token)) {
+					token = attributions.get(token);
+				}
+				newStatement += token;
+				if(tokenNum < tokens.size()-1) {
+					newStatement += " ";
+				}
+			}
+			newStatementList.add(newStatement);
+			System.out.println(statement+" =====> "+newStatement);
+		}
+		return newStatementList;
+	}
 }
