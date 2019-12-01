@@ -23,8 +23,13 @@ public class Planner {
 		rand = new Random();
 		initOperators();
 		attributions = new Attributions();
+		goalList = initGoalList();
+		initialState = initInitialState();
+		/*
+		ゴールと初期状態に属性をしてする場合
 		goalList = attributions.editStatementList(initAttributeGoalList());
 		initialState = attributions.editStatementList(initAttributeInitialState());
+		*/
 	}
 
 	public void start() {
