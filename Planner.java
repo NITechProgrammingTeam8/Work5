@@ -7,59 +7,47 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.StringTokenizer;
 
-
 public class Planner {
- ArrayList operators;
+ ArrayList<Operator> operators;
  Random rand;
- ArrayList plan;
+ ArrayList<Operator> plan;
+ ArrayList<String> goalList;
+ ArrayList<String> initialState;
  Attributions attributions;
 
  public static void main(String argv[]){
   (new Planner()).start();
  }
 
- Planner(){
-  rand = new Random();
+ Planner() {
+		rand = new Random();
+		initOperators();
+		goalList = initGoalList();
+		initialState = initInitialState();
+	}
+  
+ public void start() {
+		HashMap<String, String> theBinding = new HashMap();
+		plan = new ArrayList<Operator>();
+		planning(goalList, initialState, theBinding);
+
+		System.out.println("***** This is a plan! *****");
+		for (int i = 0; i < plan.size(); i++) {
+			Operator op = (Operator) plan.get(i);
+			System.out.println((op.instantiate(theBinding)).name);
+		}
  }
-
- public void start(){
-  initOperators();
-  ArrayList goalList     = initGoalList();
-  ArrayList initialState = initInitialState();
-  System.out.println(goalList.get(0));
-  System.out.println(goalList.get(1));
-  goalList = attributions.editStatementList(goalList);
-  System.out.println(goalList.get(0));
-  System.out.println(goalList.get(1));
-
-  /*
-  ArrayList goalList = initColorGoalList();
-  ArrayList initialState = initColorInitialState();
-  */
-
-  HashMap<String, String> theBinding = new HashMap();
-  plan = new ArrayList();
-  planning(goalList,initialState,theBinding);
-
-  System.out.println("***** This is a plan! *****");
-   for(int i = 0 ; i < plan.size() ; i++){
-    Operator op = (Operator)plan.get(i);
-    System.out.println((op.instantiate(theBinding)).name);
-   }
-  }
-
- private boolean planning(ArrayList theGoalList,
-                          ArrayList theCurrentState,
-                          HashMap theBinding){
-  System.out.println("*** GOALS ***" + theGoalList);
-  if(theGoalList.size() == 1){
-   String aGoal = (String)theGoalList.get(0);
-   if(planningAGoal(aGoal,theCurrentState,theBinding,0) != -1){
-    return true;
-   } else {
-    return false;
-   }
-  } else {
+  
+private boolean planning(ArrayList<String> theGoalList, ArrayList<String> theCurrentState, HashMap theBinding) {
+		System.out.println("*** GOALS ***" + theGoalList);
+		if (theGoalList.size() == 1) {
+			String aGoal = (String) theGoalList.get(0);
+			if (planningAGoal(aGoal, theCurrentState, theBinding, 0) != -1) {
+				return true;
+			} else {
+				return false;
+			}
+    } else {
    String aGoal = (String)theGoalList.get(0);
    int cPoint = 0;
    while(cPoint < operators.size()){
@@ -483,32 +471,32 @@ class Operator{
 		String newString = (String)theBinding.get(tmp);
 		if(newString == null){
 		    result = result + " " + tmp;
-		} else {
-		    result = result + " " + newString;
+				} else {
+					result = result + " " + newString;  // 変数を具体化
+				}
+			} else {
+				result = result + " " + tmp;
+			}
 		}
-            } else {
-                result = result + " " + tmp;
-            }
-        }
-        return result.trim();
-    }
+		return result.trim();
+	}
 
-    private boolean var(String str1){
-        // 先頭が ? なら変数
-        return str1.startsWith("?");
-    }
+	private boolean var(String str1) {
+		// 先頭が ? なら変数
+		return str1.startsWith("?");
+	}
 }
 
 class Unifier {
-    StringTokenizer st1;
-    String buffer1[];
-    StringTokenizer st2;
-    String buffer2[];
+  StringTokenizer st1;
+	String buffer1[];
+	StringTokenizer st2;
+	String buffer2[];
 	HashMap<String, String> vars;
 
-    Unifier(){
-	//vars = new HashMap();
-    }
+	Unifier() {
+		// vars = new HashMap();
+  }
 
     public boolean unify(String string1,String string2,HashMap<String, String> theBindings){
 	HashMap<String, String> orgBindings = new HashMap<String, String>();
@@ -567,61 +555,124 @@ class Unifier {
 	    }
 	}
 
-	return true;
-    }
+	public boolean unify(String string1, String string2, HashMap<String, String> theBindings) {
+		HashMap<String, String> orgBindings = new HashMap<String, String>();
+		for (Iterator e = theBindings.keySet().iterator(); e.hasNext();) {
+			String key = (String) e.next();
+			String value = (String) theBindings.get(key);
+			orgBindings.put(key, value);
+		}
+		this.vars = theBindings;
+		if (unify(string1, string2)) {
+			return true;
+		} else {
+			// 失敗したら元に戻す．
+			theBindings.clear();
+			for (Iterator e = orgBindings.keySet().iterator(); e.hasNext();) {
+				String key = (String) e.next();
+				String value = (String) orgBindings.get(key);
+				theBindings.put(key, value);
+			}
+			return false;
+		}
+	}
 
-    boolean tokenMatching(String token1,String token2){
-	if(token1.equals(token2)) return true;
-	if( var(token1) && !var(token2)) return varMatching(token1,token2);
-	if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
-	if( var(token1) &&  var(token2)) return varMatching(token1,token2);
-	return false;
-    }
+	public boolean unify(String string1, String string2) {
+		// 同じなら成功
+		if (string1.equals(string2))
+			return true;
 
-    boolean varMatching(String vartoken,String token){
-	if(vars.containsKey(vartoken)){
-	    if(token.equals(vars.get(vartoken))){
+		// 各々トークンに分ける
+		st1 = new StringTokenizer(string1);
+		st2 = new StringTokenizer(string2);
+
+		// 数が異なったら失敗
+		if (st1.countTokens() != st2.countTokens())
+			return false;
+
+		// 定数同士
+		int length = st1.countTokens();
+		buffer1 = new String[length];
+		buffer2 = new String[length];
+		for (int i = 0; i < length; i++) {
+			buffer1[i] = st1.nextToken();
+			buffer2[i] = st2.nextToken();
+		}
+
+		// 初期値としてバインディングが与えられていたら
+		if (this.vars.size() != 0) {
+			for (Iterator keys = vars.keySet().iterator(); keys.hasNext();) {
+				String key = (String) keys.next();
+				String value = (String) vars.get(key);
+				replaceBuffer(key, value);
+			}
+		}
+
+		for (int i = 0; i < length; i++) {
+			if (!tokenMatching(buffer1[i], buffer2[i])) {
+				return false;
+			}
+		}
+
 		return true;
-	    } else {
+	}
+
+	boolean tokenMatching(String token1, String token2) {
+		if (token1.equals(token2))
+			return true;
+		if (var(token1) && !var(token2))
+			return varMatching(token1, token2);
+		if (!var(token1) && var(token2))
+			return varMatching(token2, token1);
+		if (var(token1) && var(token2))
+			return varMatching(token1, token2);
 		return false;
-	    }
-	} else {
-	    replaceBuffer(vartoken,token);
-	    if(vars.containsValue(vartoken)){
-		replaceBindings(vartoken,token);
-	    }
-	    vars.put(vartoken,token);
 	}
-	return true;
-    }
 
-    void replaceBuffer(String preString,String postString){
-	for(int i = 0 ; i < buffer1.length ; i++){
-	    if(preString.equals(buffer1[i])){
-		buffer1[i] = postString;
-	    }
-	    if(preString.equals(buffer2[i])){
-		buffer2[i] = postString;
-	    }
+	boolean varMatching(String vartoken, String token) {
+		if (vars.containsKey(vartoken)) {
+			if (token.equals(vars.get(vartoken))) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			replaceBuffer(vartoken, token);
+			if (vars.containsValue(vartoken)) {
+				replaceBindings(vartoken, token);
+			}
+			vars.put(vartoken, token);
+		}
+		return true;
 	}
-    }
 
-    void replaceBindings(String preString,String postString){
-	Iterator keys;
-	for(keys = vars.keySet().iterator(); keys.hasNext();){
-	    String key = (String)keys.next();
-	    if(preString.equals(vars.get(key))){
-		vars.put(key,postString);
-	    }
+	void replaceBuffer(String preString, String postString) {
+		for (int i = 0; i < buffer1.length; i++) {
+			if (preString.equals(buffer1[i])) {
+				buffer1[i] = postString;
+			}
+			if (preString.equals(buffer2[i])) {
+				buffer2[i] = postString;
+			}
+		}
 	}
-    }
+    
+  void replaceBindings(String preString, String postString) {
+		Iterator keys;
+		for (keys = vars.keySet().iterator(); keys.hasNext();) {
+			String key = (String) keys.next();
+			if (preString.equals(vars.get(key))) {
+				vars.put(key, postString);
+			}
+		}
+	}
 
-    boolean var(String str1){
-	// 先頭が ? なら変数
-	return str1.startsWith("?");
-    }
-
+	boolean var(String str1) {
+		// 先頭が ? なら変数
+		return str1.startsWith("?");
+	}
 }
+
 
 class Attributions {
 	// HashMap<String, List<String>> attributions = new HashMap();
@@ -661,4 +712,3 @@ class Attributions {
 		return newStatementList;
 	}
 }
-
