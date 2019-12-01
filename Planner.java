@@ -2,6 +2,8 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.StringTokenizer;
 
@@ -10,6 +12,7 @@ public class Planner {
  ArrayList operators;
  Random rand;
  ArrayList plan;
+ Attributions attributions;
 
  public static void main(String argv[]){
   (new Planner()).start();
@@ -23,6 +26,16 @@ public class Planner {
   initOperators();
   ArrayList goalList     = initGoalList();
   ArrayList initialState = initInitialState();
+  System.out.println(goalList.get(0));
+  System.out.println(goalList.get(1));
+  goalList = attributions.editStatementList(goalList);
+  System.out.println(goalList.get(0));
+  System.out.println(goalList.get(1));
+
+  /*
+  ArrayList goalList = initColorGoalList();
+  ArrayList initialState = initColorInitialState();
+  */
 
   HashMap<String, String> theBinding = new HashMap();
   plan = new ArrayList();
@@ -185,13 +198,14 @@ public class Planner {
 
  private ArrayList initGoalList(){
   ArrayList goalList = new ArrayList();
-  goalList.add("B on C");
-  goalList.add("A on B");
+  goalList.add("green on ball");
+  goalList.add("blue on pyramid");
   return goalList;
  }
 
  private ArrayList initInitialState(){
   ArrayList initialState = new ArrayList();
+  ArrayList<String> attributeState = new ArrayList();
   initialState.add("clear A");
   initialState.add("clear B");
   initialState.add("clear C");
@@ -200,6 +214,18 @@ public class Planner {
   initialState.add("ontable B");
   initialState.add("ontable C");
   initialState.add("handEmpty");
+
+  attributeState.add("A is blue");
+  attributeState.add("A is box");
+  attributeState.add("B is green");
+  attributeState.add("B is pyramid");
+  attributeState.add("C is red");
+  attributeState.add("C is ball");
+
+  attributions = new Attributions();
+  for(String state: attributeState) {
+	  attributions.addAttribution(state);
+  }
   return initialState;
  }
 
@@ -299,7 +325,7 @@ class Operator{
 	ifList     = theIfList;
 	addList    = theAddList;
 	deleteList = theDeleteList;
-    }
+	}
 
     public ArrayList getAddList(){
 	return addList;
@@ -311,7 +337,7 @@ class Operator{
 
     public ArrayList getIfList(){
 	return ifList;
-    }
+	}
 
     public String toString(){
 	String result =
@@ -478,7 +504,7 @@ class Unifier {
     String buffer1[];
     StringTokenizer st2;
     String buffer2[];
-    HashMap<String, String> vars;
+	HashMap<String, String> vars;
 
     Unifier(){
 	//vars = new HashMap();
@@ -595,5 +621,44 @@ class Unifier {
 	return str1.startsWith("?");
     }
 
+}
+
+class Attributions {
+	// HashMap<String, List<String>> attributions = new HashMap();
+	HashMap<String, String> attributions =  new HashMap();
+
+	// 属性追加メソッド
+	void addAttribution(String attributionState) {
+		List<String> stateList = Arrays.asList(attributionState.split(" "));
+		if(stateList.get(1).equals("is")) {
+			attributions.put(stateList.get(2), stateList.get(0));
+		}
+	}
+
+	// 属性があるか否かの判定
+	Boolean existAttribute(String token) {
+		return attributions.containsKey(token);
+	}
+
+
+	ArrayList<String> editStatementList(List<String> statementList) {
+		ArrayList<String> newStatementList = new ArrayList();
+		for (String statement: statementList) {
+			List<String> tokens = Arrays.asList(statement.split(" "));
+			String newStatement = "";
+			for(int tokenNum = 0; tokenNum < tokens.size(); tokenNum++) {
+				String token = tokens.get(tokenNum);
+				if(attributions.containsKey(token)) {
+					token = attributions.get(token);
+				}
+				newStatement += token;
+				if(tokenNum < tokens.size()-1) {
+					newStatement += " ";
+				}
+			}
+			newStatementList.add(newStatement);
+		}
+		return newStatementList;
+	}
 }
 
