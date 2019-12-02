@@ -630,6 +630,8 @@ class Attributions {
 	// HashMap<String, List<String>> attributions = new HashMap();
 	HashMap<String, String> attributions =  new HashMap();
 	List<String> rules = new ArrayList();
+	ArrayList<String> prohibitRules = new ArrayList<String>();
+	ArrayList<String> prohibitBlockStates = new ArrayList<String>();
 
 	// デフォルト用コンストラクタ
 	public Attributions() {
@@ -642,6 +644,8 @@ class Attributions {
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
 	}
 
 	// 自然言語用コンストラクタ
@@ -650,11 +654,27 @@ class Attributions {
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
 	}
 
 	// ルール分割済み用コンストラクタ
 	public Attributions(HashMap<String, String> attributions) {
 		this.attributions = attributions;
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
+	}
+
+	// 禁止制約追加メソッド
+	private void addProhibitRules() {
+		System.out.println("###### Add prohibitRule ######");
+		prohibitRules.add("box on pyramid");
+		prohibitRules.add("box on ball");
+		prohibitRules.add("ball on pyramid");
+		prohibitRules.add("pyramid on ball");
+		for(String prohibitRule: prohibitRules) {
+			System.out.println("****** ProhibitRule:"+ prohibitRule+" ******");
+		}
 	}
 
 	// 属性追加メソッド
