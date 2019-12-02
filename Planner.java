@@ -1,8 +1,8 @@
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 
@@ -21,12 +21,13 @@ public class Planner {
 
  public void start(){
   initOperators();
-  ArrayList goalList     = initGoalList();
-  ArrayList initialState = initInitialState();
+  ArrayList<String> goalList     = initGoalList();
+  ArrayList<String> initialState = initInitialState();
 
-  HashMap<String, String> theBinding = new HashMap();
+  HashMap<String, String> theBinding = new HashMap<String, String>();
   plan = new ArrayList();
-  planning(goalList,initialState,theBinding);
+  planning(goalList,initialState,theBinding);	//プランニング実行
+  //System.out.println("theBindingの中身=\n"+theBinding);
 
   System.out.println("***** This is a plan! *****");
    for(int i = 0 ; i < plan.size() ; i++){
@@ -39,18 +40,25 @@ public class Planner {
                           ArrayList theCurrentState,
                           HashMap theBinding){
   System.out.println("*** GOALS ***" + theGoalList);
+
+  //目標集合の目標が1つだけだった場合,
   if(theGoalList.size() == 1){
+   System.out.println("目標は1つです");
    String aGoal = (String)theGoalList.get(0);
    if(planningAGoal(aGoal,theCurrentState,theBinding,0) != -1){
     return true;
    } else {
     return false;
    }
-  } else {
+  }
+
+//目標集合の目標が複数だった場合,
+  else {
+   System.out.println("目標は複数です");
    String aGoal = (String)theGoalList.get(0);
    int cPoint = 0;
    while(cPoint < operators.size()){
-    //System.out.println("cPoint:"+cPoint);
+    System.out.println("cPoint:"+cPoint);
     // Store original binding
     HashMap orgBinding = new HashMap();
     for(Iterator e = theBinding.keySet().iterator() ; e.hasNext();){
@@ -69,9 +77,10 @@ public class Planner {
      theGoalList.remove(0);		//removeget(0)でした
      System.out.println(theCurrentState);
      if(planning(theGoalList,theCurrentState,theBinding)){
-      //System.out.println("Success !");
+      System.out.println("Success !");
       return true;
      } else {
+      System.out.println("Mistaken !");
       cPoint = tmpPoint;
       //System.out.println("Fail::"+cPoint);
       theGoalList.add(0,aGoal);
@@ -108,6 +117,8 @@ public class Planner {
  private int planningAGoal(String theGoal,ArrayList theCurrentState,
                            HashMap theBinding,int cPoint){
   System.out.println("**"+theGoal);
+
+  //現在の状態で目標が満たされているか
   int size = theCurrentState.size();
   for(int i =  0; i < size ; i++){
    String aState = (String)theCurrentState.get(i);
@@ -116,14 +127,25 @@ public class Planner {
    }
   }
 
-  int randInt = Math.abs(rand.nextInt()) % operators.size();
-  Operator op = (Operator)operators.get(randInt);
-  operators.remove(randInt);	//ここも！
-  operators.add(op);
+  System.out.println("theCurrentState = \n" + theCurrentState);
+
+  /**********************オペレータをランダムに選択********************************************/
+  //int randInt = Math.abs(rand.nextInt()) % operators.size();
+  //Operator op = (Operator)operators.get(randInt);
+
+  int numOp = SelectOperatorNL();
+  Operator op = (Operator)operators.get(numOp);
+  System.out.println("オペレータ内容は = " + op.name);
+  System.out.println("Thank you!");
+  //operators.remove(randInt);	//ここも！
+  //operators.add(op);
+  cPoint = numOp;
+  /**********************ここをいじるよ！***************************************************/
 
   for(int i = cPoint ; i < operators.size() ; i++){
    Operator anOperator = rename((Operator)operators.get(i));
-   // 現在のCurrent state, Binding, planをbackup
+   System.out.println("その後のオペレータ"+i+":\n"+anOperator);
+   // 現在のCurrent state, Binding, planを保存
    HashMap orgBinding = new HashMap();
    for(Iterator e = theBinding.keySet().iterator() ; e.hasNext();){
     String key = (String)e.next();
@@ -139,22 +161,25 @@ public class Planner {
     orgPlan.add(plan.get(j));
    }
 
+
    ArrayList addList = (ArrayList)anOperator.getAddList();
    for(int j = 0 ; j < addList.size() ; j++){
-    if((new Unifier()).unify(theGoal,
-                             (String)addList.get(j),
-                             theBinding)){
+    if((new Unifier()).unify(theGoal,						//オペレータaddリストに
+                             (String)addList.get(j),		//オペレータと一致するものが
+                             theBinding)){					//あれば...
+     System.out.println("unify成功");
      Operator newOperator = anOperator.instantiate(theBinding);
-     ArrayList newGoals = (ArrayList)newOperator.getIfList();
+     ArrayList newGoals = (ArrayList)newOperator.getIfList();	//そのオペレータのIF部を副目標として加え,
      System.out.println(newOperator.name);
-     if(planning(newGoals,theCurrentState,theBinding)){
-      System.out.println(newOperator.name);
-      plan.add(newOperator);
-      theCurrentState =
+     if(planning(newGoals,theCurrentState,theBinding)){		//その副目標が達成されたら,
+      System.out.println("副目標達成\n" + newOperator.name);
+      plan.add(newOperator);								//そのオペレータを加え,
+      theCurrentState =										//状態を変更
        newOperator.applyState(theCurrentState);
       return i+1;
      } else {
       // 失敗したら元に戻す．
+      System.out.println("副目標失敗");
       theBinding.clear();
       for(Iterator e=orgBinding.keySet().iterator();e.hasNext();){
        String key = (String)e.next();
@@ -176,6 +201,18 @@ public class Planner {
   return -1;
  }
 
+ /*
+  *	自然言語の命令によってオペレータの選択
+  * return オペレータの番号
+  */
+ private int SelectOperatorNL() {
+	 int opNumber = 0;
+     Scanner scanner = new Scanner(System.in);
+     System.out.println("数値を入力してください。");
+     opNumber = scanner.nextInt();
+	 return	opNumber;
+ }
+
  int uniqueNum = 0;
  private Operator rename(Operator theOperator){
   Operator newOperator = theOperator.getRenamedOperator(uniqueNum);
@@ -183,15 +220,15 @@ public class Planner {
   return newOperator;
  }
 
- private ArrayList initGoalList(){
-  ArrayList goalList = new ArrayList();
+ private ArrayList<String> initGoalList(){
+  ArrayList<String> goalList = new ArrayList<String>();
   goalList.add("B on C");
   goalList.add("A on B");
   return goalList;
  }
 
- private ArrayList initInitialState(){
-  ArrayList initialState = new ArrayList();
+ private ArrayList<String> initInitialState(){
+  ArrayList<String> initialState = new ArrayList<String>();
   initialState.add("clear A");
   initialState.add("clear B");
   initialState.add("clear C");
@@ -204,22 +241,22 @@ public class Planner {
  }
 
  private void initOperators(){
-  operators = new ArrayList();
+  operators = new ArrayList<String>();
 
   // OPERATOR 1
   /// NAME
   String name1 = new String("Place ?x on ?y");
   /// IF
-  ArrayList ifList1 = new ArrayList();
+  ArrayList<String> ifList1 = new ArrayList<String>();
   ifList1.add(new String("clear ?y"));
   ifList1.add(new String("holding ?x"));
   /// ADD-LIST
-  ArrayList addList1 = new ArrayList();
+  ArrayList<String> addList1 = new ArrayList<String>();
   addList1.add(new String("?x on ?y"));
   addList1.add(new String("clear ?x"));
   addList1.add(new String("handEmpty"));
   /// DELETE-LIST
-  ArrayList deleteList1 = new ArrayList();
+  ArrayList<String> deleteList1 = new ArrayList<String>();
   deleteList1.add(new String("clear ?y"));
   deleteList1.add(new String("holding ?x"));
   Operator operator1 =
@@ -230,16 +267,16 @@ public class Planner {
 	/// NAME
 	String name2 = new String("remove ?x from on top ?y");
 	/// IF
-	ArrayList ifList2 = new ArrayList();
+	ArrayList<String> ifList2 = new ArrayList<String>();
 	ifList2.add(new String("?x on ?y"));
 	ifList2.add(new String("clear ?x"));
 	ifList2.add(new String("handEmpty"));
 	/// ADD-LIST
-	ArrayList addList2 = new ArrayList();
+	ArrayList<String> addList2 = new ArrayList<String>();
 	addList2.add(new String("clear ?y"));
 	addList2.add(new String("holding ?x"));
 	/// DELETE-LIST
-	ArrayList deleteList2 = new ArrayList();
+	ArrayList<String> deleteList2 = new ArrayList<String>();
 	deleteList2.add(new String("?x on ?y"));
 	deleteList2.add(new String("clear ?x"));
 	deleteList2.add(new String("handEmpty"));
@@ -251,15 +288,15 @@ public class Planner {
 	/// NAME
 	String name3 = new String("pick up ?x from the table");
 	/// IF
-	ArrayList ifList3 = new ArrayList();
+	ArrayList<String> ifList3 = new ArrayList<String>();
 	ifList3.add(new String("ontable ?x"));
 	ifList3.add(new String("clear ?x"));
 	ifList3.add(new String("handEmpty"));
 	/// ADD-LIST
-	ArrayList addList3 = new ArrayList();
+	ArrayList<String> addList3 = new ArrayList<String>();
 	addList3.add(new String("holding ?x"));
 	/// DELETE-LIST
-	ArrayList deleteList3 = new ArrayList();
+	ArrayList<String> deleteList3 = new ArrayList<String>();
 	deleteList3.add(new String("ontable ?x"));
 	deleteList3.add(new String("clear ?x"));
 	deleteList3.add(new String("handEmpty"));
@@ -271,15 +308,15 @@ public class Planner {
 	/// NAME
 	String name4 = new String("put ?x down on the table");
 	/// IF
-	ArrayList ifList4 = new ArrayList();
+	ArrayList<String> ifList4 = new ArrayList<String>();
 	ifList4.add(new String("holding ?x"));
 	/// ADD-LIST
-	ArrayList addList4 = new ArrayList();
+	ArrayList<String> addList4 = new ArrayList<String>();
 	addList4.add(new String("ontable ?x"));
 	addList4.add(new String("clear ?x"));
 	addList4.add(new String("handEmpty"));
 	/// DELETE-LIST
-	ArrayList deleteList4 = new ArrayList();
+	ArrayList<String> deleteList4 = new ArrayList<String>();
 	deleteList4.add(new String("holding ?x"));
 	Operator operator4 =
 	    new Operator(name4,ifList4,addList4,deleteList4);
