@@ -76,7 +76,7 @@ public class Planner {
 					theGoalList.remove(0); // removeget(0)でした
 					System.out.println(theCurrentState);
 					if (planning(theGoalList, theCurrentState, theBinding)) {
-						// System.out.println("Success !");
+						System.out.println("Success !");
 						return true;
 					} else {
 						cPoint = tmpPoint;
@@ -122,13 +122,22 @@ public class Planner {
 			}
 		}
 
-		int randInt = Math.abs(rand.nextInt()) % operators.size();
-		Operator op = (Operator) operators.get(randInt);
-		operators.remove(randInt); // ここも！
-		operators.add(op);
+		/**********************オペレータの選択********************************************/
+		//int randInt = Math.abs(rand.nextInt()) % operators.size();
+  		//Operator op = (Operator)operators.get(randInt);
+
+		int numOp = SelectOperatorNL();
+		Operator op = (Operator)operators.get(numOp);
+		System.out.println("オペレータ内容は = " + op.name);
+		System.out.println("Thank you!");
+		//operators.remove(randInt);
+		//operators.add(op);
+		cPoint = numOp;
+		/**********************************************************************************/
 
 		for (int i = cPoint; i < operators.size(); i++) {
 			Operator anOperator = rename((Operator) operators.get(i));
+			System.out.println("その後のオペレータ"+i+":\n"+anOperator);
 			// 現在のCurrent state, Binding, planをbackup
 			HashMap orgBinding = new HashMap();
 			for (Iterator e = theBinding.keySet().iterator(); e.hasNext();) {
@@ -147,17 +156,24 @@ public class Planner {
 
 			ArrayList<String> addList = (ArrayList<String>) anOperator.getAddList();
 			for (int j = 0; j < addList.size(); j++) {
+				//オペレータaddリストに,オペレータと一致するものがあれば,
 				if ((new Unifier()).unify(theGoal, (String) addList.get(j), theBinding)) {
+					System.out.println("unify成功");
 					Operator newOperator = anOperator.instantiate(theBinding);
+					//そのオペレータのIF部を副目標として加え,
 					ArrayList<String> newGoals = (ArrayList<String>) newOperator.getIfList();
 					System.out.println(newOperator.name);
+					//その副目標が達成されたら,
 					if (planning(newGoals, theCurrentState, theBinding)) {
-						System.out.println(newOperator.name);
+						System.out.println("副目標達成\n" + newOperator.name);
+						//そのオペレータを加え,
 						plan.add(newOperator);
+						//状態を変更
 						theCurrentState = newOperator.applyState(theCurrentState);
 						return i + 1;
 					} else {
 						// 失敗したら元に戻す．
+						System.out.println("副目標失敗");
 						theBinding.clear();
 						for (Iterator e = orgBinding.keySet().iterator(); e.hasNext();) {
 							String key = (String) e.next();
@@ -177,6 +193,18 @@ public class Planner {
 			}
 		}
 		return -1;
+	}
+
+       /*
+	* 自然言語の命令によってオペレータの選択
+	*  return オペレータの番号
+	*/
+	private int SelectOperatorNL() {
+		int opNumber = 0;
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("数値を入力してください。");
+		opNumber = scanner.nextInt();
+	 	return	opNumber;
 	}
 
 	int uniqueNum = 0;
