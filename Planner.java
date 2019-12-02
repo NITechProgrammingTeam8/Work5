@@ -1,6 +1,7 @@
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.StringTokenizer;
@@ -14,6 +15,8 @@ public class Planner {
 	ArrayList<String> goalList;
 	ArrayList<String> initialState;
 	Attributions attributions;
+	ArrayList<String> planResult;
+	LinkedHashMap<Operator, HashMap<String, String>> planUnifiedResult;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -38,9 +41,22 @@ public class Planner {
 		planning(goalList, initialState, theBinding);
 
 		System.out.println("***** This is a plan! *****");
+		planResult = new ArrayList<>();
+		planUnifiedResult  = new LinkedHashMap<>();
 		for (int i = 0; i < plan.size(); i++) {
 			Operator op = (Operator) plan.get(i);
-			System.out.println((op.instantiate(theBinding)).name);
+			String result = (op.instantiate(theBinding)).name;
+			System.out.println(result);
+			planResult.add(result);
+			for(Operator initOp : operators) {
+				Unifier unifier = new Unifier();
+				System.out.println(initOp.getName());
+				if(unifier.unify(result, initOp.getName())) {
+					planUnifiedResult.put(initOp, unifier.getVars());
+					break;
+				}
+			}
+			System.out.println();
 		}
 	}
 
@@ -342,18 +358,6 @@ class Operator {
 		return ifList;
 	}
 
-	public void setAddList(ArrayList<String> theAddList) {
-		addList = theAddList;
-	}
-
-	public void setDeleteList(ArrayList<String> theDeleteList) {
-		deleteList = theDeleteList;
-	}
-
-	public void setIfList(ArrayList<String> theIfList) {
-		ifList = theIfList;
-	}
-
 	public String toString() {
 		String result = "NAME: " + name + "\n" + "IF :" + ifList + "\n" + "ADD:" + addList + "\n" + "DELETE:"
 				+ deleteList;
@@ -504,7 +508,7 @@ class Unifier {
 	HashMap<String, String> vars;
 
 	Unifier() {
-		// vars = new HashMap();
+		vars = new HashMap();
 	}
 
 	public boolean unify(String string1, String string2, HashMap<String, String> theBindings) {
@@ -566,6 +570,7 @@ class Unifier {
 			}
 		}
 
+		System.out.println(vars.toString());
 		return true;
 	}
 
@@ -624,6 +629,9 @@ class Unifier {
 		return str1.startsWith("?");
 	}
 
+	HashMap<String, String> getVars() {
+		return vars;
+	}
 }
 
 class Attributions {
