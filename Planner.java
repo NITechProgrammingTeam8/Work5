@@ -208,13 +208,13 @@ public class Planner {
 		return goalList;
 	}
 
-	private ArrayList<String> initAttributeGoalList() {
+	public ArrayList<String> initAttributeGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("green on ball");
 		goalList.add("blue on pyramid");
-		for(String goal: goalList) {
-			System.out.println("========== goal:"+goal+" ==========");
-		}
+		// for(String goal: goalList) {
+		// 	System.out.println("========== goal:"+goal+" ==========");
+		// }
 		return goalList;
 	}
 
@@ -231,7 +231,7 @@ public class Planner {
 		return initialState;
 	}
 
-	private ArrayList<String> initAttributeInitialState() {
+	public ArrayList<String> initAttributeInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear blue");
 		initialState.add("clear green");
@@ -241,9 +241,9 @@ public class Planner {
 		initialState.add("ontable pyramid");
 		initialState.add("ontable ball");
 		initialState.add("handEmpty");
-		for(String state: initialState) {
-			System.out.println("---------- initInitialState:"+state+" ----------");
-		}
+		// for(String state: initialState) {
+		// 	System.out.println("---------- initInitialState:"+state+" ----------");
+		// }
 		return initialState;
 	}
 
