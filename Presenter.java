@@ -65,10 +65,10 @@ public class Presenter {
     }
 
     // 属性をセット（自然言語）
-    void addAttribution(String attributionState) {
-        planner.attributions.addAttribution(attributionState);
+    void setAttribution(ArrayList<String> attributions) {
+        planner.attributions = new Attributions(attributions);
     }
-
+    
     // セットした内容で再実行
     void restart() {
         planner.start();
