@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -14,6 +15,8 @@ public class Planner {
 	ArrayList<String> goalList;
 	ArrayList<String> initialState;
 	Attributions attributions;
+	ArrayList<String> planResult;
+	ArrayList<Operator> planUnifiedResult;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -38,9 +41,20 @@ public class Planner {
 		planning(goalList, initialState, theBinding);
 
 		System.out.println("***** This is a plan! *****");
+		planResult = new ArrayList<>();
+		planUnifiedResult  = new ArrayList<>();
 		for (int i = 0; i < plan.size(); i++) {
 			Operator op = (Operator) plan.get(i);
-			System.out.println((op.instantiate(theBinding)).name);
+			Operator result = (op.instantiate(theBinding));
+			System.out.println(result.name);
+			planResult.add(result.name);
+			for(Operator initOp : operators) {
+				Unifier unifier = new Unifier();
+				if(unifier.unify(result.name, initOp.getName())) {
+					planUnifiedResult.add(new Operator(initOp, unifier.getVars()));
+					break;
+				}
+			}
 		}
 	}
 
@@ -301,24 +315,24 @@ public class Planner {
 		return newOperator;
 	}
 
-	private ArrayList<String> initGoalList() {
+	public ArrayList<String> initGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("B on C");
         goalList.add("A on B");
 		return goalList;
 	}
 
-	private ArrayList<String> initAttributeGoalList() {
+	public ArrayList<String> initAttributeGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("green on ball");
 		goalList.add("blue on pyramid");
-		for(String goal: goalList) {
-			System.out.println("========== goal:"+goal+" ==========");
-		}
+		// for(String goal: goalList) {
+		// 	System.out.println("========== goal:"+goal+" ==========");
+		// }
 		return goalList;
 	}
 
-	private ArrayList<String> initInitialState() {
+	public ArrayList<String> initInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear A");
 		initialState.add("clear B");
@@ -331,7 +345,7 @@ public class Planner {
 		return initialState;
 	}
 
-	private ArrayList<String> initAttributeInitialState() {
+	public ArrayList<String> initAttributeInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear blue");
 		initialState.add("clear green");
@@ -341,9 +355,9 @@ public class Planner {
 		initialState.add("ontable pyramid");
 		initialState.add("ontable ball");
 		initialState.add("handEmpty");
-		for(String state: initialState) {
-			System.out.println("---------- initInitialState:"+state+" ----------");
-		}
+		// for(String state: initialState) {
+		// 	System.out.println("---------- initInitialState:"+state+" ----------");
+		// }
 		return initialState;
 	}
 
@@ -432,12 +446,18 @@ class Operator {
 	ArrayList<String> ifList;
 	ArrayList<String> addList;
 	ArrayList<String> deleteList;
+	HashMap<String, String> bindings;
 
 	Operator(String theName, ArrayList<String> theIfList, ArrayList<String> theAddList, ArrayList<String> theDeleteList) {
 		name = theName;
 		ifList = theIfList;
 		addList = theAddList;
 		deleteList = theDeleteList;
+	}
+
+	Operator(Operator op, HashMap<String, String> theBindings) {
+		this(op.getName(), op.getIfList(), op.getAddList(), op.getDeleteList());
+		bindings = theBindings;
 	}
 
 	public String getName() {
@@ -456,16 +476,8 @@ class Operator {
 		return ifList;
 	}
 
-	public void setAddList(ArrayList<String> theAddList) {
-		addList = theAddList;
-	}
-
-	public void setDeleteList(ArrayList<String> theDeleteList) {
-		deleteList = theDeleteList;
-	}
-
-	public void setIfList(ArrayList<String> theIfList) {
-		ifList = theIfList;
+	public HashMap<String, String> getBindings() {
+		return bindings;
 	}
 
 	public String toString() {
@@ -618,7 +630,7 @@ class Unifier {
 	HashMap<String, String> vars;
 
 	Unifier() {
-		// vars = new HashMap();
+		vars = new HashMap();
 	}
 
 	public boolean unify(String string1, String string2, HashMap<String, String> theBindings) {
@@ -680,6 +692,7 @@ class Unifier {
 			}
 		}
 
+		// System.out.println(vars.toString());
 		return true;
 	}
 
@@ -738,6 +751,9 @@ class Unifier {
 		return str1.startsWith("?");
 	}
 
+	HashMap<String, String> getVars() {
+		return vars;
+	}
 }
 
 class Attributions {
