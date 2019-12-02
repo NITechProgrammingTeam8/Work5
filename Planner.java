@@ -16,7 +16,7 @@ public class Planner {
 	ArrayList<String> initialState;
 	Attributions attributions;
 	ArrayList<String> planResult;
-	LinkedHashMap<Operator, HashMap<String, String>> planUnifiedResult;
+	ArrayList<Operator> planUnifiedResult;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -42,21 +42,19 @@ public class Planner {
 
 		System.out.println("***** This is a plan! *****");
 		planResult = new ArrayList<>();
-		planUnifiedResult  = new LinkedHashMap<>();
+		planUnifiedResult  = new ArrayList<>();
 		for (int i = 0; i < plan.size(); i++) {
 			Operator op = (Operator) plan.get(i);
-			String result = (op.instantiate(theBinding)).name;
-			System.out.println(result);
-			planResult.add(result);
+			Operator result = (op.instantiate(theBinding));
+			System.out.println(result.name);
+			planResult.add(result.name);
 			for(Operator initOp : operators) {
 				Unifier unifier = new Unifier();
-				System.out.println(initOp.getName());
-				if(unifier.unify(result, initOp.getName())) {
-					planUnifiedResult.put(initOp, unifier.getVars());
+				if(unifier.unify(result.name, initOp.getName())) {
+					planUnifiedResult.add(new Operator(initOp, unifier.getVars()));
 					break;
 				}
 			}
-			System.out.println();
 		}
 	}
 
@@ -203,7 +201,7 @@ public class Planner {
 		return newOperator;
 	}
 
-	private ArrayList<String> initGoalList() {
+	public ArrayList<String> initGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("B on C");
         goalList.add("A on B");
@@ -220,7 +218,7 @@ public class Planner {
 		return goalList;
 	}
 
-	private ArrayList<String> initInitialState() {
+	public ArrayList<String> initInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear A");
 		initialState.add("clear B");
@@ -334,12 +332,18 @@ class Operator {
 	ArrayList<String> ifList;
 	ArrayList<String> addList;
 	ArrayList<String> deleteList;
+	HashMap<String, String> binding;
 
 	Operator(String theName, ArrayList<String> theIfList, ArrayList<String> theAddList, ArrayList<String> theDeleteList) {
 		name = theName;
 		ifList = theIfList;
 		addList = theAddList;
 		deleteList = theDeleteList;
+	}
+
+	Operator(Operator op, HashMap<String, String> theBinding) {
+		this(op.getName(), op.getIfList(), op.getAddList(), op.getDeleteList());
+		binding = theBinding;
 	}
 
 	public String getName() {
@@ -356,6 +360,10 @@ class Operator {
 
 	public ArrayList<String> getIfList() {
 		return ifList;
+	}
+
+	public HashMap<String, String> getBinding() {
+		return binding;
 	}
 
 	public String toString() {
@@ -570,7 +578,7 @@ class Unifier {
 			}
 		}
 
-		System.out.println(vars.toString());
+		// System.out.println(vars.toString());
 		return true;
 	}
 

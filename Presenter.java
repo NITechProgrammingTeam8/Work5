@@ -3,20 +3,29 @@ import java.util.*;
 public class Presenter {
     private Planner planner;
 
+    public static void main(String args[]) {
+        Presenter pre = new Presenter();
+        System.out.println("!!!!!!");
+        System.out.println(pre.getInitialState());
+        System.out.println(pre.getGoalList());
+        System.out.println(pre.getStepList().get(0).getName());
+        System.out.println(pre.getStepList().get(0).getBinding());
+    }
+
     Presenter() {
         planner = new Planner();
         planner.start();
     }
 
     // デフォルトの初期状態を取得
-    ArrayList<String> getinitialState() {
-        return planner.initialState;
+    ArrayList<String> getInitialState() {
+        return planner.initInitialState();
     }
 
     
     // デフォルトのゴールを取得
     ArrayList<String> getGoalList() {
-        return planner.goalList;
+        return planner.initGoalList();
     }
     
     
@@ -31,8 +40,9 @@ public class Presenter {
         return planner.planResult;
     }
     
-    // 適用したオペレーションと変数束縛をまとめた一覧(各ステップごと))
-    LinkedHashMap<Operator, HashMap<String, String>> getStepList() {
+    // 適用したオペレーション(各ステップごと)
+    // getBinding()で変数束縛のHashMap<String, String>を取得できる．
+    ArrayList<Operator> getStepList() {
         return planner.planUnifiedResult;
     }
 
