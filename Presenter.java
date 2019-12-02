@@ -9,7 +9,7 @@ public class Presenter {
         System.out.println(pre.getInitialState());
         System.out.println(pre.getGoalList());
         System.out.println(pre.getStepList().get(0).getName());
-        System.out.println(pre.getStepList().get(0).getBinding());
+        System.out.println(pre.getStepList().get(0).getBindings());
     }
 
     Presenter() {

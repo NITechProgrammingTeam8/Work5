@@ -332,7 +332,7 @@ class Operator {
 	ArrayList<String> ifList;
 	ArrayList<String> addList;
 	ArrayList<String> deleteList;
-	HashMap<String, String> binding;
+	HashMap<String, String> bindings;
 
 	Operator(String theName, ArrayList<String> theIfList, ArrayList<String> theAddList, ArrayList<String> theDeleteList) {
 		name = theName;
@@ -341,9 +341,9 @@ class Operator {
 		deleteList = theDeleteList;
 	}
 
-	Operator(Operator op, HashMap<String, String> theBinding) {
+	Operator(Operator op, HashMap<String, String> theBindings) {
 		this(op.getName(), op.getIfList(), op.getAddList(), op.getDeleteList());
-		binding = theBinding;
+		bindings = theBindings;
 	}
 
 	public String getName() {
@@ -362,8 +362,8 @@ class Operator {
 		return ifList;
 	}
 
-	public HashMap<String, String> getBinding() {
-		return binding;
+	public HashMap<String, String> getBindings() {
+		return bindings;
 	}
 
 	public String toString() {
