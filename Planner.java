@@ -1,11 +1,12 @@
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.StringTokenizer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.StringTokenizer;
 
 public class Planner {
 	ArrayList<Operator> operators;
@@ -14,6 +15,8 @@ public class Planner {
 	ArrayList<String> goalList;
 	ArrayList<String> initialState;
 	Attributions attributions;
+	ArrayList<String> planResult;
+	ArrayList<Operator> planUnifiedResult;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -46,9 +49,20 @@ public class Planner {
 		planning(goalList, initialState, theBinding);
 
 		System.out.println("***** This is a plan! *****");
+		planResult = new ArrayList<>();
+		planUnifiedResult  = new ArrayList<>();
 		for (int i = 0; i < plan.size(); i++) {
 			Operator op = (Operator) plan.get(i);
-			System.out.println((op.instantiate(theBinding)).name);
+			Operator result = (op.instantiate(theBinding));
+			System.out.println(result.name);
+			planResult.add(result.name);
+			for(Operator initOp : operators) {
+				Unifier unifier = new Unifier();
+				if(unifier.unify(result.name, initOp.getName())) {
+					planUnifiedResult.add(new Operator(initOp, unifier.getVars()));
+					break;
+				}
+			}
 		}
 	}
 
@@ -84,7 +98,7 @@ public class Planner {
 					theGoalList.remove(0); // removeget(0)でした
 					System.out.println(theCurrentState);
 					if (planning(theGoalList, theCurrentState, theBinding)) {
-						// System.out.println("Success !");
+						System.out.println("Success !");
 						return true;
 					} else {
 						cPoint = tmpPoint;
@@ -130,42 +144,126 @@ public class Planner {
 			}
 		}
 
+		/**********************オペレータの選択********************************************/
+		//1.ランダム用
 		int randInt = Math.abs(rand.nextInt()) % operators.size();
-		Operator op = (Operator) operators.get(randInt);
-		operators.remove(randInt); // ここも！
+  		Operator op = (Operator)operators.get(randInt);
+		operators.remove(randInt);
 		operators.add(op);
+		cPoint = randInt;
 
-		for (int i = cPoint; i < operators.size(); i++) {
-			Operator anOperator = rename((Operator) operators.get(i));
+		//2.発展課題5-6用
+		//int numOp = SelectOperatorNL();
+
+		//3.その他開発用
+		int numOp = RecommentOperator(theGoal);
+
+		/* 2.3のどちらかを使うときは,このコメントアウトを外してね！
+		Operator op = (Operator)operators.get(numOp);
+		System.out.println("オペレータ内容は = " + op.name);
+		System.out.println("Thank you!");
+		cPoint = numOp;
+		*/
+		/**********************************************************************************/
+
+		//1.まずは選択したオペレータを動かし,
+		Operator anOperator = rename((Operator) operators.get(cPoint));
+		System.out.println("その後のオペレータ"+ cPoint +":\n"+anOperator);
+		// 現在のCurrent state, Binding, planをbackup
+		HashMap orgBinding = new HashMap();
+		for (Iterator e = theBinding.keySet().iterator(); e.hasNext();) {
+			String key = (String) e.next();
+			String value = (String) theBinding.get(key);
+			orgBinding.put(key, value);
+		}
+		ArrayList<String> orgState = new ArrayList<String>();
+		for (int j = 0; j < theCurrentState.size(); j++) {
+			orgState.add(theCurrentState.get(j));
+		}
+		ArrayList<Operator> orgPlan = new ArrayList<Operator>();
+		for (int j = 0; j < plan.size(); j++) {
+			orgPlan.add(plan.get(j));
+		}
+
+		ArrayList<String> addList = (ArrayList<String>) anOperator.getAddList();
+		for (int j = 0; j < addList.size(); j++) {
+			//オペレータaddリストに,オペレータと一致するものがあれば,
+			if ((new Unifier()).unify(theGoal, (String) addList.get(j), theBinding)) {
+				System.out.println("unify成功");
+				Operator newOperator = anOperator.instantiate(theBinding);
+				//そのオペレータのIF部を副目標として加え,
+				ArrayList<String> newGoals = (ArrayList<String>) newOperator.getIfList();
+				System.out.println(newOperator.name);
+				//その副目標が達成されたら,
+				if (planning(newGoals, theCurrentState, theBinding)) {
+					System.out.println("副目標達成\n" + newOperator.name);
+					//そのオペレータを加え,
+					plan.add(newOperator);
+					//状態を変更
+					theCurrentState = newOperator.applyState(theCurrentState);
+					return cPoint + 1;
+				} else {
+					// 失敗したら元に戻す．
+					System.out.println("副目標失敗");
+					theBinding.clear();
+					for (Iterator e = orgBinding.keySet().iterator(); e.hasNext();) {
+						String key = (String) e.next();
+						String value = (String) orgBinding.get(key);
+						theBinding.put(key, value);
+					}
+					theCurrentState.clear();
+					for (int k = 0; k < orgState.size(); k++) {
+						theCurrentState.add(orgState.get(k));
+					}
+					plan.clear();
+					for (int k = 0; k < orgPlan.size(); k++) {
+						plan.add(orgPlan.get(k));
+					}
+				}
+			}
+		}
+
+		//2.その後,他のオペレータを試す
+		for (int i = 0; i < operators.size(); i++) {
+			if(i != cPoint) {
+			anOperator = rename((Operator) operators.get(i));
+			System.out.println("その他のオペレータ"+i+":\n"+anOperator);
 			// 現在のCurrent state, Binding, planをbackup
-			HashMap orgBinding = new HashMap();
+			orgBinding = new HashMap();
 			for (Iterator e = theBinding.keySet().iterator(); e.hasNext();) {
 				String key = (String) e.next();
 				String value = (String) theBinding.get(key);
 				orgBinding.put(key, value);
 			}
-			ArrayList<String> orgState = new ArrayList<String>();
+			orgState = new ArrayList<String>();
 			for (int j = 0; j < theCurrentState.size(); j++) {
 				orgState.add(theCurrentState.get(j));
 			}
-			ArrayList<Operator> orgPlan = new ArrayList<Operator>();
+			orgPlan = new ArrayList<Operator>();
 			for (int j = 0; j < plan.size(); j++) {
 				orgPlan.add(plan.get(j));
 			}
 
-			ArrayList<String> addList = (ArrayList<String>) anOperator.getAddList();
+			addList = (ArrayList<String>) anOperator.getAddList();
 			for (int j = 0; j < addList.size(); j++) {
+				//オペレータaddリストに,オペレータと一致するものがあれば,
 				if ((new Unifier()).unify(theGoal, (String) addList.get(j), theBinding)) {
+					System.out.println("unify成功");
 					Operator newOperator = anOperator.instantiate(theBinding);
+					//そのオペレータのIF部を副目標として加え,
 					ArrayList<String> newGoals = (ArrayList<String>) newOperator.getIfList();
 					System.out.println(newOperator.name);
+					//その副目標が達成されたら,
 					if (planning(newGoals, theCurrentState, theBinding)) {
-						System.out.println(newOperator.name);
+						System.out.println("副目標達成\n" + newOperator.name);
+						//そのオペレータを加え,
 						plan.add(newOperator);
+						//状態を変更
 						theCurrentState = newOperator.applyState(theCurrentState);
 						return i + 1;
 					} else {
 						// 失敗したら元に戻す．
+						System.out.println("副目標失敗");
 						theBinding.clear();
 						for (Iterator e = orgBinding.keySet().iterator(); e.hasNext();) {
 							String key = (String) e.next();
@@ -184,7 +282,37 @@ public class Planner {
 				}
 			}
 		}
+		}
 		return -1;
+	}
+
+   /*
+	* 最適な操作をできるようなオペレータの選択
+	*  仮引数  : theGoalの内容
+	*  return: オペレータの番号
+	*/
+	private int RecommentOperator(String theGoal) {
+		int opNumber = 0;
+		if(theGoal.contains("on")) {
+			opNumber = 0;
+		}
+		else if(theGoal.contains("holding")) {
+			opNumber = 2;
+		}
+		return opNumber;
+	}
+
+
+   /*
+	* 自然言語の命令によってオペレータの選択
+	*  return オペレータの番号
+	*/
+	private int SelectOperatorNL() {
+		int opNumber = 0;
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("数値を入力してください。");
+		opNumber = scanner.nextInt();
+	 	return	opNumber;
 	}
 
 	int uniqueNum = 0;
@@ -195,24 +323,24 @@ public class Planner {
 		return newOperator;
 	}
 
-	private ArrayList<String> initGoalList() {
+	public ArrayList<String> initGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("B on C");
         goalList.add("A on B");
 		return goalList;
 	}
 
-	private ArrayList<String> initAttributeGoalList() {
+	public ArrayList<String> initAttributeGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
 		goalList.add("green on ball");
 		goalList.add("blue on pyramid");
-		for(String goal: goalList) {
-			System.out.println("========== goal:"+goal+" ==========");
-		}
+		// for(String goal: goalList) {
+		// 	System.out.println("========== goal:"+goal+" ==========");
+		// }
 		return goalList;
 	}
 
-	private ArrayList<String> initInitialState() {
+	public ArrayList<String> initInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear A");
 		initialState.add("clear B");
@@ -225,7 +353,7 @@ public class Planner {
 		return initialState;
 	}
 
-	private ArrayList<String> initAttributeInitialState() {
+	public ArrayList<String> initAttributeInitialState() {
 		ArrayList<String> initialState = new ArrayList<String>();
 		initialState.add("clear blue");
 		initialState.add("clear green");
@@ -235,9 +363,9 @@ public class Planner {
 		initialState.add("ontable pyramid");
 		initialState.add("ontable ball");
 		initialState.add("handEmpty");
-		for(String state: initialState) {
-			System.out.println("---------- initInitialState:"+state+" ----------");
-		}
+		// for(String state: initialState) {
+		// 	System.out.println("---------- initInitialState:"+state+" ----------");
+		// }
 		return initialState;
 	}
 
@@ -326,12 +454,18 @@ class Operator {
 	ArrayList<String> ifList;
 	ArrayList<String> addList;
 	ArrayList<String> deleteList;
+	HashMap<String, String> bindings;
 
 	Operator(String theName, ArrayList<String> theIfList, ArrayList<String> theAddList, ArrayList<String> theDeleteList) {
 		name = theName;
 		ifList = theIfList;
 		addList = theAddList;
 		deleteList = theDeleteList;
+	}
+
+	Operator(Operator op, HashMap<String, String> theBindings) {
+		this(op.getName(), op.getIfList(), op.getAddList(), op.getDeleteList());
+		bindings = theBindings;
 	}
 
 	public String getName() {
@@ -350,16 +484,8 @@ class Operator {
 		return ifList;
 	}
 
-	public void setAddList(ArrayList<String> theAddList) {
-		addList = theAddList;
-	}
-
-	public void setDeleteList(ArrayList<String> theDeleteList) {
-		deleteList = theDeleteList;
-	}
-
-	public void setIfList(ArrayList<String> theIfList) {
-		ifList = theIfList;
+	public HashMap<String, String> getBindings() {
+		return bindings;
 	}
 
 	public String toString() {
@@ -512,7 +638,7 @@ class Unifier {
 	HashMap<String, String> vars;
 
 	Unifier() {
-		// vars = new HashMap();
+		vars = new HashMap();
 	}
 
 	public boolean unify(String string1, String string2, HashMap<String, String> theBindings) {
@@ -574,6 +700,7 @@ class Unifier {
 			}
 		}
 
+		// System.out.println(vars.toString());
 		return true;
 	}
 
@@ -632,6 +759,9 @@ class Unifier {
 		return str1.startsWith("?");
 	}
 
+	HashMap<String, String> getVars() {
+		return vars;
+	}
 }
 
 class Attributions {
@@ -643,7 +773,7 @@ class Attributions {
 
 	// デフォルト用コンストラクタ
 	public Attributions() {
-		rules.add("A is blue");
+		    rules.add("A is blue");
         rules.add("A is box");
         rules.add("B is green");
         rules.add("B is pyramid");

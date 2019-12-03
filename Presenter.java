@@ -3,16 +3,38 @@ import java.util.*;
 public class Presenter {
     private Planner planner;
 
+    public static void main(String args[]) {
+        Presenter pre = new Presenter();
+        System.out.println("-----on Presenter-----");
+        System.out.println(pre.getAttributeInitialState());
+        System.out.println(pre.getAttributeGoalList());
+        System.out.println(pre.getStepList().get(0).getName());
+        System.out.println(pre.getStepList().get(0).getBindings());
+    }
+
     Presenter() {
         planner = new Planner();
         planner.start();
     }
 
-    // HashMap: 状態(String)とその状態についての変数束縛(String[])をまとめた一覧
-    // LinkedHashMap: 各ステップを，HashMapと何のOperatorを使ってそこに至ったかについての一覧（ステップ順）
-    // 初期状態はLinkedHashMapの1つ目の要素．Operatorはnull
-    LinkedHashMap<HashMap<String, String[]>, Operator> getStepList() {
-        return new LinkedHashMap<HashMap<String, String[]>, Operator>();
+    // デフォルトの初期状態を取得
+    ArrayList<String> getInitialState() {
+        return planner.initInitialState();
+    }
+
+    // デフォルトのゴールを取得
+    ArrayList<String> getGoalList() {
+        return planner.initGoalList();
+    }
+
+    // デフォルトの初期状態を取得（属性版）
+    ArrayList<String> getAttributeInitialState() {
+        return planner.initAttributeInitialState();
+    }
+
+    // デフォルトのゴールを取得
+    ArrayList<String> getAttributeGoalList() {
+        return planner.initAttributeGoalList();
     }
 
     // オペレータ一覧の取得
@@ -21,50 +43,33 @@ public class Presenter {
         return planner.operators;
     }
 
-    // 新たなオペレータを作る
-    // 戻り値は作成したオペレータインスタンス（一応）
-    Operator makeOperator(String name, ArrayList<String> iflist, ArrayList<String> addList, ArrayList<String> deleteList) {
-        Operator op = new Operator(name, iflist, addList, deleteList);
-
-        // Plannnerに追加を知らせる
-
-        return op;
+    // 過程を文字列で取得
+    ArrayList<String> getPlan() {
+        return planner.planResult;
     }
 
-    // 既存のオペレータoperatorを編集する(名前以外)
-    // 編集しない引数はnullでもOK
-    // 戻り値は編集後のオペレータインスタンス（一応）
-    Operator editOperator(Operator operator, ArrayList<String> newIflist, ArrayList<String> newAddList, ArrayList<String> newDeleteList) {
-        if(newIflist != null) {
-            operator.setIfList(newIflist);
-        }
-        if(newAddList != null) {
-            operator.setAddList(newAddList);
-        }
-        if(newDeleteList != null) {
-            operator.setDeleteList(newDeleteList);
-        }
-
-        // Plannerに変更を知らせる
-
-        return operator;
+    // 適用したオペレーション(各ステップごと)
+    // getBinding()で変数束縛のHashMap<String, String>を取得できる．
+    ArrayList<Operator> getStepList() {
+        return planner.planUnifiedResult;
     }
 
-    // 既存のオペレータoperatorを削除する
-    void deleteOperator(Operator operator) {
-
-        // Plannnerから削除する
-    }
-
-    
+    // 初期状態をセット
     void setInitialState(ArrayList<String> initialState) {
         planner.initialState = initialState;
     }
 
-    void setGoal(ArrayList<String> goalList) {
+    // ゴールをセット
+    void setGoalList(ArrayList<String> goalList) {
         planner.goalList = goalList;
     }
 
+    // 属性をセット（自然言語）
+    void setAttribution(ArrayList<String> attributions) {
+        planner.attributions = new Attributions(attributions);
+    }
+    
+    // セットした内容で再実行
     void restart() {
         planner.start();
     }
