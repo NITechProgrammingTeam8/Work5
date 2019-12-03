@@ -28,8 +28,8 @@ public class Planner {
 		attributions = new Attributions();
 		goalList = initGoalList();
 		initialState = initInitialState();
+		//ゴールと初期状態に属性をしてする場合
 		/*
-		ゴールと初期状態に属性をしてする場合
 		goalList = attributions.editStatementList(initAttributeGoalList());
 		initialState = attributions.editStatementList(initAttributeInitialState());
 		*/
@@ -38,6 +38,14 @@ public class Planner {
 	public void start() {
 		HashMap<String, String> theBinding = new HashMap();
 		plan = new ArrayList<Operator>();
+		if(goalList.size() < initGoalList().size()) {
+			System.out.println("禁止制約によってゴールが成立しなくなりました");
+			return;
+		}
+		if(initialState.size() == 0) {
+			System.out.println("初期状態がありません");
+			return;
+		}
 		planning(goalList, initialState, theBinding);
 
 		System.out.println("***** This is a plan! *****");
@@ -760,11 +768,12 @@ class Attributions {
 	// HashMap<String, List<String>> attributions = new HashMap();
 	HashMap<String, String> attributions =  new HashMap();
 	List<String> rules = new ArrayList();
+	ArrayList<String> prohibitRules = new ArrayList<String>();
+	ArrayList<String> prohibitBlockStates = new ArrayList<String>();
 
 	// デフォルト用コンストラクタ
 	public Attributions() {
-		/*
-		rules.add("A is blue");
+		    rules.add("A is blue");
         rules.add("A is box");
         rules.add("B is green");
         rules.add("B is pyramid");
@@ -773,7 +782,8 @@ class Attributions {
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
-		*/
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
 	}
 
 	// 自然言語用コンストラクタ
@@ -782,15 +792,55 @@ class Attributions {
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
 	}
 
 	// ルール分割済み用コンストラクタ
 	public Attributions(HashMap<String, String> attributions) {
 		this.attributions = attributions;
+		addProhibitRules();
+		prohibitBlockStates = editStatementList(prohibitRules);
+	}
+
+	// 禁止制約追加メソッド
+	private void addProhibitRules() {
+		System.out.println("###### Add prohibitRule ######");
+		prohibitRules.add("box on pyramid");
+		prohibitRules.add("box on ball");
+		prohibitRules.add("ball on pyramid");
+		prohibitRules.add("pyramid on ball");
+		prohibitRules.add("trapezoid on pyramid");
+		prohibitRules.add("trapezoid on ball");
+		for(String prohibitRule: prohibitRules) {
+			System.out.println("****** ProhibitRule:"+ prohibitRule+" ******");
+		}
+	}
+
+	// ブロック状態確認メソッド
+	private ArrayList<String> checkStates(ArrayList<String> states) {
+		ArrayList<String> checkedStates = new ArrayList<String>();
+		for(String state: states) {
+			if(checkProhibitBlockState(state)) {
+				checkedStates.add(state);
+			}
+		}
+		return checkedStates;
+	}
+
+	// 禁止制約ブロック状態確認メソッド
+	private Boolean checkProhibitBlockState(String state) {
+		for(String prohibitBlockState: prohibitBlockStates) {
+			if(prohibitBlockState.equals(state)) {
+				System.out.println("【Warning!:状態"+state+"は禁止制約です！！】");
+				return false;
+			}
+		}
+		return true;
 	}
 
 	// 属性追加メソッド
-	void addAttribution(String attributionState) {
+	private void addAttribution(String attributionState) {
 		List<String> stateList = Arrays.asList(attributionState.split(" "));
 		if(stateList.get(1).equals("is")) {
 			attributions.put(stateList.get(2), stateList.get(0));
@@ -798,7 +848,7 @@ class Attributions {
 	}
 
 	// 属性があるか否かの判定
-	Boolean existAttribute(String token) {
+	private Boolean existAttribute(String token) {
 		return attributions.containsKey(token);
 	}
 
@@ -821,6 +871,6 @@ class Attributions {
 			newStatementList.add(newStatement);
 			System.out.println(statement+" =====> "+newStatement);
 		}
-		return newStatementList;
+		return checkStates(newStatementList);
 	}
 }
