@@ -1,0 +1,144 @@
+\documentclass[12pt]{jarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{url}
+\usepackage{listings,jlisting}
+\usepackage{ascmac}
+\usepackage{amsmath,amssymb}
+
+%ここからソースコードの表示に関する設定
+\lstset{
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},
+  numbers=left,
+  xrightmargin=0zw,
+  xleftmargin=3zw,
+  numberstyle={\scriptsize},
+  stepnumber=1,
+  numbersep=1zw,
+  lineskip=-0.5ex
+}
+%ここまでソースコードの表示に関する設定
+
+\title{知能プログラミング演習II 課題5}
+\author{グループ8\\
+  29114003 青山周平\\
+}
+\date{2019年11月25日}
+
+\begin{document}
+\maketitle
+
+\paragraph{提出物} work5
+\paragraph{グループ} グループ8
+\paragraph{メンバー}
+\begin{tabular}{|c|c|c|}
+  \hline
+  学生番号&氏名&貢献度比率\\
+  \hline\hline
+  29114003&青山周平&20\\
+  \hline
+  29114060&後藤拓也&20\\
+  \hline
+  29114116&増田大輝&20\\
+  \hline
+  29114142&湯浅範子&20\\
+  \hline
+  29119016&小中祐希&20\\
+  \hline
+\end{tabular}
+
+
+
+\section{課題の説明}
+\begin{description}
+\item[必須課題5-1] 目標集合を変えてみたときに，動作が正しくない場合があったかどうか，実行例を示して考察せよ．
+また，もしあったならその箇所を修正し，どのように修正したか記せ．
+\item[必須課題5-2] 教科書のプログラムでは，オペレータ間の競合解消戦略としてランダムなオペレータ選択を採用している．
+これを，効果的な競合解消戦略に改良すべく考察し，実装せよ．
+改良の結果，性能がどの程度向上したかを定量的に（つまり数字で）示すこと．
+\item[必須課題5-3] 上記のプランニングのプログラムでは，ブロックの属性（たとえば色や形など）を考えていないので，色や形などの属性を扱えるようにせよ．ルールとして表現すること．
+例えば色と形の両方を扱えるようにする場合，Aが青い三角形，Bが黄色の四角形，Cが緑の台形であったとする．
+その時，色と形を使ってもゴールを指定できるようにする（"green on blue" や"blue on box"のように）
+\item[必須課題5-4] 上記5-2, 5-3で改良したプランニングシステムのGUIを実装せよ．
+ブロック操作の過程をグラフィカルに可視化し，初期状態や目標状態をGUI上で変更できることが望ましい．
+\item[発展課題5-5] ブロックワールド内における物理的制約条件をルールとして表現せよ．
+例えば，三角錐（pyramid）の上には他のブロックを乗せられない等，その世界における物理的な制約を実現せよ．
+\item[発展課題5-6] ユーザが自然言語（日本語や英語など）の命令文によってブロックを操作したり，初期状態／目標状態を変更したりできるようにせよ．
+なお，命令文の動詞や語尾を1つの表現に決め打ちするのではなく，多様な表現を許容できることが望ましい．
+\item[発展課題5-7] 3次元空間 (実世界) の物理的な挙動を考慮したブロックワールドにおけるプランニングを実現せよ．
+なお，物理エンジン等を利用する場合，Java以外の言語のフレームワークを使って実現しても構わない．
+\item[発展課題5-8] 教科書3.3節のプランニング手法を応用できそうなブロック操作以外のタスクをグループで話し合い，新たなプランニング課題を自由に設定せよ．
+さらに，もし可能であれば，その自己設定課題を解くプランニングシステムを実装せよ．
+\end{description}
+
+\section{必須課題5-4}
+\begin{screen}
+上記5-2, 5-3で改良したプランニングシステムのGUIを実装せよ．
+ブロック操作の過程をグラフィカルに可視化し，初期状態や目標状態をGUI上で変更できることが望ましい．
+\end{screen}
+私の担当箇所は，必須課題5-4におけるGUIとPlanner.javaとの間でデータの仲介を行うPresenterの制作である．
+
+\subsection{手法}
+Presenterを実装するにあたり，以下のような方針を立てた．
+\begin{enumerate}
+\item Planner.javaのデータを，外部から取り出し，セットできるように改良する．
+\item 導かれたプランの導出過程を渡せるようにする．
+\end{enumerate}
+
+１．に関して，MVPアーキテクチャを導入し，GUIとPlanner間のデータのやり取りを，Presenterによって緩衝することで，拡張性の向上とGUI担当者の負担軽減を図った．
+
+２．に関して，GUI担当者が受け取りやすい渡し方を相談して決めることで，柔軟に対応した． \\
+
+\subsection{実装}
+Presenter.javaには以下のクラスが含まれる．
+\begin{description}
+\item[Presenter] テスト用のmainメソッド，擬似的な各種のゲッタやセッタ，導出過程をPlannerから取得するメソッド等を実装したクラス．
+\end{description}
+
+\subsubsection{Planner.javaのデータを，外部から取り出し，セットできるように改良する．}
+
+\subsubsection{導かれたプランの導出過程を渡せるようにする．}
+
+\subsection{実行例}
+
+\subsection{考察}
+
+
+\section{発展課題5-7}
+\begin{screen}
+3次元空間 (実世界) の物理的な挙動を考慮したブロックワールドにおけるプランニングを実現せよ．
+なお，物理エンジン等を利用する場合，Java以外の言語のフレームワークを使って実現しても構わない．
+\end{screen}
+私の担当箇所は，発展課題5-7におけるプランニングの，Unityを用いた実装である．
+
+\subsection{手法}
+3次元空間の物理的な挙動を考慮したブロックワールドにおけるプランニングを実現するにあたり，以下のような方針を立てた．
+\begin{enumerate}
+\item Planner.javaで得た結果をC\#に引き渡す．
+\item 
+\end{enumerate}
+
+１．に関して，Planner.javaと連動してプランニングを行うことで，Unity側での新たな実装を減らせるよう試みた．
+
+\subsection{実装}
+
+\subsection{実行例}
+
+\subsection{考察}
+
+
+\section{感想}
+
+% 参考文献
+\begin{thebibliography}{99}
+
+\end{thebibliography}
+
+\end{document}
