@@ -32,13 +32,14 @@ public class Presenter {
         return planner.initAttributeInitialState();
     }
 
-    // デフォルトのゴールを取得
+    // デフォルトのゴールを取得（属性版）
     ArrayList<String> getAttributeGoalList() {
         return planner.initAttributeGoalList();
     }
 
     // オペレータ一覧の取得
     // 各OperatorはgetName(), getIfList(), getAddList(), getDeleteList()メソッドで各値を取得できる．
+    // 初期状態とゴールが同じ時は要素数0のリストを返し，禁止制約によりゴールできない場合はnullを返す．
     ArrayList<Operator> getOperatorList() {
         return planner.operators;
     }
@@ -55,18 +56,21 @@ public class Presenter {
     }
 
     // 初期状態をセット
-    void setInitialState(ArrayList<String> initialState) {
+    ArrayList<String> setInitialState(ArrayList<String> initialState) {
         planner.initialState = initialState;
+        return planner.initialState;
     }
 
     // ゴールをセット
-    void setGoalList(ArrayList<String> goalList) {
+    ArrayList<String> setGoalList(ArrayList<String> goalList) {
         planner.goalList = goalList;
+        return planner.goalList;
     }
 
     // 属性をセット（自然言語）
-    void setAttribution(ArrayList<String> attributions) {
+    HashMap<String, String> setAttribution(ArrayList<String> attributions) {
         planner.attributions = new Attributions(attributions);
+        return planner.attributions.attributions;
     }
     
     // セットした内容で再実行
