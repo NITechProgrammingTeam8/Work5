@@ -773,7 +773,7 @@ class Attributions {
 
 	// デフォルト用コンストラクタ
 	public Attributions() {
-		    rules.add("A is blue");
+		rules.add("A is blue");
         rules.add("A is box");
         rules.add("B is green");
         rules.add("B is pyramid");
@@ -818,7 +818,7 @@ class Attributions {
 	}
 
 	// ブロック状態確認メソッド
-	private ArrayList<String> checkStates(ArrayList<String> states) {
+	ArrayList<String> checkStates(ArrayList<String> states) {
 		ArrayList<String> checkedStates = new ArrayList<String>();
 		for(String state: states) {
 			if(checkProhibitBlockState(state)) {

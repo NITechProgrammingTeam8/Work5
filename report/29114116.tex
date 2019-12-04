@@ -254,6 +254,66 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
 複数ある実現方法の中から,既存のプログラムとの相性や論理的な汎用性を考えてもっとも良いと思える方法を選択できたと考えている.
 
 
+\section{発展課題5-5}
+\begin{screen}
+    ブロックワールド内における物理的制約条件をルールとして表現せよ.
+    例えば,三角錐（pyramid）の上には他のブロックを乗せられない等,その世界における物理的な制約を実現せよ.
+\end{screen}
+\subsection{手法}
+
+
+\subsection{実装}
+
+
+\subsection{実行例}
+以下に,CUI上での実行結果を示す.
+ただし,コンストラクタはデフォルトコンストラクタを使用するものとする.
+\begin{lstlisting}[caption=禁止制約を課した時の実行結果, label=mid]
+    ~/Programming2/Work5
+    ●java Planner                                                                                                                                                                                                    【 feature/prohibit-rules 】
+    ###### Add prohibitRule ######
+    ****** ProhibitRule:box on pyramid ******
+    ****** ProhibitRule:box on ball ******
+    ****** ProhibitRule:ball on pyramid ******
+    ****** ProhibitRule:pyramid on ball ******
+    ****** ProhibitRule:trapezoid on pyramid ******
+    ****** ProhibitRule:trapezoid on ball ******
+    ++++++ EditStatement ++++++
+    box on pyramid =====> A on B
+    box on ball =====> A on C
+    ball on pyramid =====> C on B
+    pyramid on ball =====> B on C
+    trapezoid on pyramid =====> trapezoid on B
+    trapezoid on ball =====> trapezoid on C
+    ========== goal:green on ball ==========
+    ========== goal:blue on pyramid ==========
+    ++++++ EditStatement ++++++
+    green on ball =====> B on C
+    blue on pyramid =====> A on B
+    【Warning!:状態B on Cは禁止制約です！！】
+    【Warning!:状態A on Bは禁止制約です！！】
+    ---------- initInitialState:clear blue ----------
+    ---------- initInitialState:clear green ----------
+    ---------- initInitialState:clear red ----------
+    ---------- initInitialState:ontable box ----------
+    ---------- initInitialState:ontable pyramid ----------
+    ---------- initInitialState:ontable ball ----------
+    ---------- initInitialState:handEmpty ----------
+    ++++++ EditStatement ++++++
+    clear blue =====> clear A
+    clear green =====> clear B
+    clear red =====> clear C
+    ontable box =====> ontable A
+    ontable pyramid =====> ontable B
+    ontable ball =====> ontable C
+    handEmpty =====> handEmpty
+    禁止制約によってゴールが成立しなくなりました
+\end{lstlisting}
+
+\subsection{考察}
+
+
+
 % 参考文献
 \begin{thebibliography}{99}
 \bibitem{notty} Javaによる知能プログラミング入門 --著：新谷 虎松 \\
