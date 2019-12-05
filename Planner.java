@@ -25,18 +25,23 @@ public class Planner {
 		rand = new Random();
 		initOperators();
 		attributions = new Attributions();
+		/*
 		goalList = initGoalList();
 		initialState = initInitialState();
+		*/
 		//ゴールと初期状態に属性をしてする場合
-		/*
+		//
+		System.out.println("コンストラクタで初期化します");
 		goalList = attributions.editStatementList(initAttributeGoalList());
 		initialState = attributions.editStatementList(initAttributeInitialState());
-		*/
+		//
 	}
 
 	public void start() {
 		HashMap<String, String> theBinding = new HashMap();
 		plan = new ArrayList<Operator>();
+		System.out.println("goalList = \n" + goalList);
+		System.out.println("initGoalList() = \n" + initGoalList());
 		if(goalList.size() < initGoalList().size()) {
 			System.out.println("禁止制約によってゴールが成立しなくなりました");
 			return;
@@ -177,12 +182,7 @@ public class Planner {
 		System.out.println("Thank you!");
 		cPoint = numOp;
 		*/
-
-		/**********************************************************************************/
-		//まっす～の"禁止制約をはじくメソッド"追加
-
-		theCurrentState = attributions.checkStates(theCurrentState);
-		/**********************************************************************************/
+		/*****************************************************************************/
 
 		//1.まずは選択したオペレータを動かし,
 		Operator anOperator = rename((Operator) operators.get(cPoint));
@@ -219,6 +219,11 @@ public class Planner {
 					plan.add(newOperator);
 					//状態を変更
 					theCurrentState = newOperator.applyState(theCurrentState);
+					/**********************************************************************************/
+					//まっす～の"禁止制約をはじくメソッド"追加
+					theCurrentState = attributions.checkStates(theCurrentState);
+					/**********************************************************************************/
+
 					return cPoint + 1;
 				} else {
 					// 失敗したら元に戻す．
@@ -280,6 +285,11 @@ public class Planner {
 						plan.add(newOperator);
 						//状態を変更
 						theCurrentState = newOperator.applyState(theCurrentState);
+						/**********************************************************************************/
+						//まっす～の"禁止制約をはじくメソッド"追加
+						theCurrentState = attributions.checkStates(theCurrentState);
+						/**********************************************************************************/
+
 						return i + 1;
 					} else {
 						// 失敗したら元に戻す．
@@ -854,11 +864,14 @@ class Attributions {
 	// デフォルト用コンストラクタ
 	public Attributions() {
 		rules.add("A is blue");
-        rules.add("A is box");
+        //rules.add("A is box");
+		rules.add("A is ball");
         rules.add("B is green");
-        rules.add("B is pyramid");
+        //rules.add("B is pyramid");
+        rules.add("B is trapezoid");
         rules.add("C is red");
-		rules.add("C is ball");
+		//rules.add("C is ball");
+        rules.add("C is box");
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
