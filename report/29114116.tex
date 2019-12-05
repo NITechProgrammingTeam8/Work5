@@ -35,7 +35,7 @@
 \begin{document}
 \maketitle
 
-\paragraph{提出物} rep5
+\paragraph{提出物} rep5, group08
 \paragraph{グループ} グループ8
 
 \paragraph{メンバー}
@@ -92,10 +92,10 @@
 したがって,入力されたルールと初期状態はあらかじめ属性表現をブロックに変換することで,もとの後ろ向き推論が正常に機能するような実装を行うものとする.
 
 \subsection{実装}
-まず,属性を扱うクラスAttributeを作成した.
-Attributeクラスの変数としてHashMap<String,String>型のattributions,List<String>型のrulesがある.
+まず,属性を扱うクラスAttributionsを作成した.
+Attributionsクラスの変数としてHashMap<String,String>型のattributions,List<String>型のrulesがある.
 それぞれ,属性とブロックの関係(属性が主キー)の集合,ルールの集合に対応する.
-このAttributeクラスには以下の3つのコンストラクタが存在し,全て上記変数への操作を行うものであるが,それぞれに次のような用途がある.
+このAttributionsクラスには以下の3つのコンストラクタが存在し,全て上記変数への操作を行うものであるが,それぞれに次のような用途がある.
 
 \begin{description}
     \item[Attributions()] テスト用のデフォルトコンストラクタ.デフォルトのルールが用意されている.ルールは自然言語で記述.
@@ -145,7 +145,7 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
 以上によって,自然言語で記述されたルール集合から導出された属性とブロックの関係や与えられた属性とブロックの関係を元にして,
 ゴールリストや初期状態のリストに含まれる属性表現をブロック名に統一する処理が完成した.
 
-具体的な利用法は,使用したい任意のコンストラクタによってAttributeクラスを初期化し,以下のような形で,ゴールリストや初期状態のリストに適用すればよい.
+具体的な利用法は,使用したい任意のコンストラクタによってAttributionsクラスを初期化し,以下のような形で,ゴールリストや初期状態のリストに適用すればよい.
 \begin{lstlisting}[caption=editStatementListの利用, label=mid]
     goalList = attributions.editStatementList(initAttributeGoalList());
 	initialState = attributions.editStatementList(initAttributeInitialState());
@@ -229,13 +229,6 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
 先ほどと同様に,15~22行目では,これらの表現を属性によるものからブロック名のみの形に変更している.
 したがって,以降の実行結果はブロック名のみを用いた場合と同様となる.
 
-
-% \begin{figure}[!hbt]
-%    \centering
-%    \includegraphics[scale=0.40]{images/forward_chaining_2.pdf}
-%    \caption{CarRule8の実行とワーキングメモリの変化}
-%\end{figure}
-
 \subsection{考察}
 属性を扱うに当たって,初めは属性のまま推論を行い,プランニングを実行できるようにしようと考えた.
 しかし,同じブロックの属性であっても,異なる属性同士において,字面だけではマッチングが成功しないことに気が付いた.
@@ -260,15 +253,58 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
     例えば,三角錐（pyramid）の上には他のブロックを乗せられない等,その世界における物理的な制約を実現せよ.
 \end{screen}
 \subsection{手法}
-
+ブロックワールド内における物理的制約条件（以下、禁止制約と表現する）をルールとして表現し,プランニングに反映するために,
+課題5-3で作成した属性に関する処理を扱うクラスAttributions内に禁止制約のルールを保持させる方法を考案した.
+例えば,"box on pyramid"（三角錐の上に正四面体がある）のようなルールが物理法則に反する禁止制約に当たる. \\
+これらの禁止制約のルール集合を,課題5-3で結びつけた「属性とブロックの関係」をもとに,属性を用いた表現からブロックによる表現に置き換える. \\
+以上により,ゴールリストやオペレーター適用後の状態とブロックによって表現される禁止制約を比較することで,
+物理法則に反する状態を削除することができる.
+また,ゴールリストに物理法則に反するものが含まれる場合には,ゴール不成立とする.
 
 \subsection{実装}
-
+まず,属性を扱うAttributionsクラス内にArrayList<String>型の禁止制約のルール集合prohibitRulesを保持させる.
+このprohibitRulesはコンストラクタから呼び出されるメソッドaddProhibitRules()により禁止制約のルールが追加される. \\
+加えて,属性によって表現された禁止制約のルールをブロックによる表現に置き換えたルール集合prohibitBlockStatesも定義する.
+prohibitRulesからprohibitBlockStatesに変換を行うに当たっては,課題5-3で作成したメソッドeditStatementListを用いる. \\
+次に,状態と禁止制約を比較するメソッドcheckProhibitBlockState(String state)を実装した.
+このメソッドを以下に示す.
+\begin{lstlisting}[caption=checkProhibitBlockStateメソッドの実装, label=mid]
+    private Boolean checkProhibitBlockState(String state) {
+		for(String prohibitBlockState: prohibitBlockStates) {
+			if(prohibitBlockState.equals(state)) {
+				System.out.println("【Warning!:状態"+state+"は禁止制約です！！】");
+				return false;
+			}
+		}
+		return true;
+	}
+\end{lstlisting}
+2~7行目に渡って,全ての禁止制約のルール集合の要素と仮引数で受け取った状態を比較する処理を行なっている.
+ここで,一つでも禁止制約と一致すると,falseが返却される.
+反対に,全ての禁止制約と一致しなかった場合には,trueが返却される. \\
+続いて,このcheckProhibitBlockStateメソッドを利用するcheckStates(ArrayList<String> states)メソッドの説明を行う.
+このメソッドについても以下に示す.
+\begin{lstlisting}[caption=checkStatesメソッドの実装, label=mid]
+    ArrayList<String> checkStates(ArrayList<String> states) {
+		ArrayList<String> checkedStates = new ArrayList<String>();
+		for(String state: states) {
+			if(checkProhibitBlockState(state)) {
+				checkedStates.add(state);
+			}
+		}
+		return checkedStates;
+	}
+\end{lstlisting}
+3~7行目に渡って,仮引数で受け取った状態集合の各要素をcheckProhibitBlockStateの引数として渡すことで,禁止制約のチェックを行なっている.
+結果としてtrueが帰ってきた場合にはチェック済みの状態集合checkedStatesに格納し,falseの場合には格納されない. \\
+全ての要素のチェックが終わると,checkedStatesを返却する. \\
+checkedStatesメソッドを,変化直後の状態集合に対して使用することによって,物理法則に反する状態を削除することができる.
+以上の実装により,禁止制約のブロックワールドへの反映を実現した.
 
 \subsection{実行例}
 以下に,CUI上での実行結果を示す.
 ただし,コンストラクタはデフォルトコンストラクタを使用するものとする.
-\begin{lstlisting}[caption=禁止制約を課した時の実行結果, label=mid]
+\begin{lstlisting}[caption=禁止制約によりゴールが成立しなくなった場合, label=mid]
     ~/Programming2/Work5
     ●java Planner                                                                                                                                                                                                    【 feature/prohibit-rules 】
     ###### Add prohibitRule ######
@@ -309,10 +345,26 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
     handEmpty =====> handEmpty
     禁止制約によってゴールが成立しなくなりました
 \end{lstlisting}
+はじめに,3~9行目で禁止制約のルールがprohibitRulesに追加されている.
+次に,10~16行目でeditStatementListによって属性による表現からブロックによる表現に変換されている.
+17,18行目で属性表現によって指定されたゴールが19~21行目でブロックによる表現に変換されている. \\
+そして,22,23行目で禁止制約がゴールに使用されていることが検出されている.
+詳しく見てみると,22行目の検出は14行目と20行目の変換結果が一致することによるものであり,
+23行目の検出は11行目と21行目の変換結果が一致することによるものである.
+これらによって,ゴールリストに物理法則に反するものが含まれていることが判明したため,39行目においてメッセージが表示され,プランニングが終了している.
 
 \subsection{考察}
-
-
+課題5-3の実装をもとに禁止制約をブロックワールドに反映する実装を行なった.
+特に,editStatementListのように再利用することのできるメソッドを作成したことは大きなプラスとなった.
+また,課題5-3で取り決めた,属性をブロック名に置き換えてからプランニングを行う方針は,
+課題5-5を進めるに当たって大きな助けにもなった.
+具体的には,"A is red","A is pyramid","B is blue","B is ball"のようなルールのもと,
+"pyramid on ball"のような禁止制約があるとする.
+このとき,"red on blue"が状態に含まれるとき,属性表現のままプランニングを行うと見逃してしまうことになるが,
+先に状態と禁止制約の属性表現をブロック名に変換して,"A on B"とすることによって,
+物理法則に反する状態であると判定することができる. \\
+したがって,課題5-3で取り決めた方針によって,課題5-5のプログラムの質を向上させることができたと考えている. \\
+以上より,より良い実装を目指すに当たって,あらかじめ頭の中でプログラムの構造や処理の手順を考えておくことは非常に効果的であると感じた.
 
 % 参考文献
 \begin{thebibliography}{99}
