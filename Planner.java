@@ -379,8 +379,8 @@ public class Planner {
 
 	public ArrayList<String> initAttributeGoalList() {
 		ArrayList<String> goalList = new ArrayList<String>();
-		goalList.add("green on ball");
-		goalList.add("blue on pyramid");
+		goalList.add("trapezoid on box");
+		goalList.add("ball on trapezoid");
 		// for(String goal: goalList) {
 		// 	System.out.println("========== goal:"+goal+" ==========");
 		// }
@@ -408,9 +408,10 @@ public class Planner {
 		initialState.add("clear green");
 		initialState.add("clear red");
 
+		initialState.add("ontable ball");
+		initialState.add("ontable trapezoid");
 		initialState.add("ontable box");
 		initialState.add("ontable pyramid");
-		initialState.add("ontable ball");
 		initialState.add("handEmpty");
 		// for(String state: initialState) {
 		// 	System.out.println("---------- initInitialState:"+state+" ----------");
