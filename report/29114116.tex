@@ -259,7 +259,15 @@ addAttributionメソッドは仮引数attributionStateでこれらを受け取�
 これらの禁止制約のルール集合を,課題5-3で結びつけた「属性とブロックの関係」をもとに,属性を用いた表現からブロックによる表現に置き換える. \\
 以上により,ゴールリストやオペレーター適用後の状態とブロックによって表現される禁止制約を比較することで,
 物理法則に反する状態を削除することができる.
-また,ゴールリストに物理法則に反するものが含まれる場合には,ゴール不成立とする.
+また,ゴールリストに物理法則に反するものが含まれる場合には,ゴール不成立とする. 
+
+以下に,今回実装した禁止制約の例を示す. \\
+
+\begin{figure}[!hbt]
+  \centering
+  \includegraphics[scale=0.35]{images/prohibit-rules.pdf}
+  \caption{物理制約によって禁止される制約の例}
+\end{figure}
 
 \subsection{実装}
 まず,属性を扱うAttributionsクラス内にArrayList<String>型の禁止制約のルール集合prohibitRulesを保持させる.
