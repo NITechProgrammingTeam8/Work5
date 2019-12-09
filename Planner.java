@@ -7,6 +7,20 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
+/*
+class Store{
+
+	HashMap<String, String> storeHashMap;
+
+	Store(){
+	}
+
+	public void set(HashMap<String, String> hash) {
+		this.storeHashMap =  hash;
+	}
+}
+*/
+
 public class Planner {
 	ArrayList<Operator> operators;
 	Random rand;
@@ -16,6 +30,7 @@ public class Planner {
 	Attributions attributions;
 	ArrayList<String> planResult;
 	ArrayList<Operator> planUnifiedResult;
+	HashMap<String, String> p_productKeyOnValue;
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -25,6 +40,9 @@ public class Planner {
 		rand = new Random();
 		initOperators();
 		attributions = new Attributions();
+
+		//AttributesクラスからPlannerクラスへ
+		setHashMap(attributions.a_productKeyOnValue);
 		/*
 		goalList = sortGoalList(initGoalList());
 		initialState = initInitialState();
@@ -34,7 +52,17 @@ public class Planner {
 		System.out.println("コンストラクタで初期化します");
 		goalList = sortGoalList(attributions.editStatementList(initAttributeGoalList()));
 		initialState = attributions.editStatementList(initAttributeInitialState());
-		//
+		System.out.println("コンストラクタを終了します");
+		//System.out.println("作った禁止制約のHashMap = " + attributions.keyValueProhibit);
+	}
+
+
+	public HashMap<String, String> getHashMap(){
+		return p_productKeyOnValue;
+	}
+
+	public void setHashMap(HashMap<String, String> pHashMap){
+		this.p_productKeyOnValue = pHashMap;
 	}
 
 	public void start() {
@@ -58,7 +86,9 @@ public class Planner {
 		for (int i = 0; i < plan.size(); i++) {
 			Operator op = (Operator) plan.get(i);
 			Operator result = (op.instantiate(theBinding));
-			System.out.println(result.name);
+			if(!result.name.contains("?")) {
+				System.out.println(result.name);
+			}
 			planResult.add(result.name);
 			for(Operator initOp : operators) {
 				Unifier unifier = new Unifier();
@@ -99,8 +129,10 @@ public class Planner {
 				int tmpPoint = planningAGoal(aGoal, theCurrentState, theBinding, cPoint);
 				// System.out.println("tmpPoint: "+tmpPoint);
 				if (tmpPoint != -1) {
-					theGoalList.remove(0); // removeget(0)でした
+					theGoalList.remove(0);
 					System.out.println(theCurrentState);
+
+					//ここの条件分岐の役割は...
 					if (planning(theGoalList, theCurrentState, theBinding)) {
 						System.out.println("Success !");
 						return true;
@@ -143,7 +175,19 @@ public class Planner {
 		int size = theCurrentState.size();
 		for (int i = 0; i < size; i++) {
 			String aState = (String) theCurrentState.get(i);
-			if ((new Unifier()).unify(theGoal, aState, theBinding)) {
+
+			//System.out.println("Unify前のp_productKeyOnValue=" + p_productKeyOnValue);
+			//現在のKeyOnValueリストをUnifierクラスからもらってくるため
+			Unifier unification = new Unifier();
+			if (unification.unify(theGoal, aState, theBinding, attributions.keyValueProhibit, p_productKeyOnValue)) {
+				System.out.println("theBinding" + theBinding);
+
+				//UnifierからもらったKeyOnValueリストを,Plannerクラスに保存
+				//for(HashMap.Entry<String, String> entry : unification.getHashMap().entrySet()){
+				for(String str : unification.getHashMap().keySet()) {
+					System.out.println("Key = " + str + " Value = " + unification.getHashMap().get(str));
+					p_productKeyOnValue.put(str, unification.getHashMap().get(str));
+				}
 				return 0;
 			}
 		}
@@ -172,8 +216,9 @@ public class Planner {
 		int numRecOp = RecommentOperator(theGoal);
 		Operator opRec = (Operator)operators.get(numRecOp);
 		System.out.println("おすすめは = " + opRec.name);
+		 */
 
-		//2.発展課題5-6用
+		/*2.発展課題5-6用
 		int numOp = SelectOperatorNL();
 
 		// 2.3を使うときは,このコメントアウトを外してね！
@@ -186,7 +231,7 @@ public class Planner {
 
 		//1.まずは選択したオペレータを動かし,
 		Operator anOperator = rename((Operator) operators.get(cPoint));
-//		System.out.println("選択したオペレータ"+ cPoint +":\n"+anOperator);
+		System.out.println("選択したオペレータ"+ cPoint +":\n"+anOperator);
 		// 現在のCurrent state, Binding, planをbackup
 		HashMap orgBinding = new HashMap();
 		for (Iterator e = theBinding.keySet().iterator(); e.hasNext();) {
@@ -206,16 +251,25 @@ public class Planner {
 		ArrayList<String> addList = (ArrayList<String>) anOperator.getAddList();
 		for (int j = 0; j < addList.size(); j++) {
 			//オペレータaddリストに,オペレータと一致するものがあれば,
-			if ((new Unifier()).unify(theGoal, (String) addList.get(j), theBinding)) {
+			//System.out.println("Unify前のp_productKeyOnValue=" + p_productKeyOnValue);
+			Unifier unification = new Unifier();
+			if (unification.unify(theGoal, (String) addList.get(j), theBinding, attributions.keyValueProhibit, p_productKeyOnValue)) {
+				//UnifierからもらったKeyOnValueリストを,Plannerクラスに保存
+				for(String str : unification.getHashMap().keySet()) {
+					System.out.println("Key = " + str + " Value = " + unification.getHashMap().get(str));
+					p_productKeyOnValue.put(str, unification.getHashMap().get(str));
+				}
 				System.out.println("unify成功");
 				Operator newOperator = anOperator.instantiate(theBinding);
 				//そのオペレータのIF部を副目標として加え,
 				ArrayList<String> newGoals = (ArrayList<String>) newOperator.getIfList();
-				System.out.println(newOperator.name);
+				System.out.println("オペレータの具体化:" +newOperator.name);
+				System.out.println("その時の状態:" + theCurrentState);
 				//その副目標が達成されたら,
 				if (planning(newGoals, theCurrentState, theBinding)) {
 					System.out.println("副目標達成\n" + newOperator.name);
 					//そのオペレータを加え,
+					System.out.println("newOperator = " + newOperator);
 					plan.add(newOperator);
 					//状態を変更
 					theCurrentState = newOperator.applyState(theCurrentState);
@@ -267,21 +321,33 @@ public class Planner {
 			orgPlan = new ArrayList<Operator>();
 			for (int j = 0; j < plan.size(); j++) {
 				orgPlan.add(plan.get(j));
+				//System.out.println("ここかな？"+plan.get(j));
 			}
 
 			addList = (ArrayList<String>) anOperator.getAddList();
 			for (int j = 0; j < addList.size(); j++) {
 				//オペレータaddリストに,オペレータと一致するものがあれば,
-				if ((new Unifier()).unify(theGoal, (String) addList.get(j), theBinding)) {
+				//System.out.println("Unify前のp_productKeyOnValue=" + p_productKeyOnValue);
+				Unifier unification = new Unifier();
+				if (unification.unify(theGoal, (String) addList.get(j), theBinding, attributions.keyValueProhibit, p_productKeyOnValue)) {
+					//UnifierからもらったKeyOnValueリストを,Plannerクラスに保存
+					System.out.println("attributions.keyValueProhibit" + attributions.keyValueProhibit);
+					System.out.println("サイズ=" + unification.getHashMap().size());
+					for(String str : unification.getHashMap().keySet()) {
+						System.out.println("Key = " + str + " Value = " + unification.getHashMap().get(str));
+						p_productKeyOnValue.put(str, unification.getHashMap().get(str));
+					}
 					System.out.println("unify成功");
 					Operator newOperator = anOperator.instantiate(theBinding);
 					//そのオペレータのIF部を副目標として加え,
 					ArrayList<String> newGoals = (ArrayList<String>) newOperator.getIfList();
-					System.out.println(newOperator.name);
+					System.out.println("オペレータの具体化:" +newOperator.name);
+					System.out.println("その時の状態:" + theCurrentState);
 					//その副目標が達成されたら,
 					if (planning(newGoals, theCurrentState, theBinding)) {
 						System.out.println("副目標達成\n" + newOperator.name);
 						//そのオペレータを加え,
+						System.out.println("newOperator = " + newOperator);
 						plan.add(newOperator);
 						//状態を変更
 						theCurrentState = newOperator.applyState(theCurrentState);
@@ -767,12 +833,27 @@ class Unifier {
 	StringTokenizer st2;
 	String buffer2[];
 	HashMap<String, String> vars;
+	HashMap<String, List<String>> prohibit;
+	HashMap<String, String> productKeyOnValue;
 
 	Unifier() {
-		vars = new HashMap();
+		vars = new HashMap<String, String>();
+		prohibit = new HashMap<String, List<String>>();
 	}
 
-	public boolean unify(String string1, String string2, HashMap<String, String> theBindings) {
+	//生成したKeyOnValueリストをPlannerクラスに返すよ！
+	public HashMap<String, String> getHashMap(){
+		return productKeyOnValue;
+	}
+
+	public void setHashMap(HashMap<String, String> uHashMap){
+		this.productKeyOnValue = uHashMap;
+	}
+
+
+	public boolean unify(String string1, String string2, HashMap<String, String> theBindings, HashMap<String, List<String>> KeyonProhibit, HashMap<String, String> productKeyOnValue) {
+		this.prohibit = KeyonProhibit;
+		this.productKeyOnValue = productKeyOnValue;
 		HashMap<String, String> orgBindings = new HashMap<String, String>();
 		for (Iterator e = theBindings.keySet().iterator(); e.hasNext();) {
 			String key = (String) e.next();
@@ -825,11 +906,60 @@ class Unifier {
 			}
 		}
 
+		//AttributionsクラスのKey制約を持ってくる
+		HashMap<String, List<String>> keyProhibit = prohibit;
+		if(productKeyOnValue != null) {
+			System.out.println("unify内:keyProhibit" + keyProhibit);
+		}
+		//これから調べる「Key on Value」の値を格納
+		String[] keyOnValue = new String[2];
+
 		for (int i = 0; i < length; i++) {
 			if (!tokenMatching(buffer1[i], buffer2[i])) {
 				return false;
 			}
+			//「x on y」の場合, 「keyOnValue[0]="x"(Keyとして), keyOnValue[1]="y"(Value)」を代入
+			if(buffer1[1].equals("on")){
+			 // 「B on C」と「?x on ?y」を考えて,
+				if(i == 0){
+					//Key.set(定数のほう:buffer2[i]=B)かな...
+					keyOnValue[0] = buffer2[i];
+					System.out.println("keyOnValue[0] = " + keyOnValue[0]);
+				}
+				else if(i == 2){
+					//Value.set(定数のほう:buffer2[i]=C)かな...
+					keyOnValue[1] = buffer2[i];
+					System.out.println("keyOnValue[1] = " + keyOnValue[1]);
+				}
+			}
 		}
+		//保存
+		if(buffer1[1].equals("on")){
+			productKeyOnValue.put(keyOnValue[0], keyOnValue[1]);
+			System.out.println("productKeyOnValue = " + productKeyOnValue);
+		}
+
+		//このクラスで保存した内容は他のクラスへ
+		//Store store = new Store();
+		//store.set(productKeyOnValue);
+		//setHashMap(productKeyOnValue);
+
+
+		//Attributesクラスの禁止制約と比較していく
+		for(String str : keyProhibit.keySet()){	//Init_Keyの要素分
+			System.out.println("Init_Key(str) = " + str);
+			if(str.equals(keyOnValue[0])){	//Init_Keyの要素.equlas(this_Keyの要素)
+				//for(){ //そのInit_KeyのInit_Valueの要素分
+				for(int num = 0; num < keyProhibit.get(str).size(); num++)
+				if(keyProhibit.get(str).get(num).equals(keyOnValue[1])){ //Init_Valueの要素.equlas(this_Valueの要素)
+					System.out.println("Init_Value = " + keyProhibit.get(str));
+					return false;
+				}
+				//}
+			}
+		}
+
+
 
 		// System.out.println(vars.toString());
 		return true;
@@ -858,6 +988,28 @@ class Unifier {
 			replaceBuffer(vartoken, token);
 			if (vars.containsValue(vartoken)) {
 				replaceBindings(vartoken, token);
+			}
+
+			if(productKeyOnValue != null) {
+				System.out.println("varMatchingで..." + vartoken +"と"+ token);
+				System.out.println("productKeyOnValueで..." + productKeyOnValue);
+				for(String str1 : productKeyOnValue.keySet()){	//product_KeyValueの数
+					//ここは,Valueに変数「?y2」が入っているとする
+					if(var(productKeyOnValue.get(str1))) {
+				  	//if((product_KeyValueのValue要素).equals(vartoken)){
+				 			//そのvartokenとtokenの組み合わせが,Init_KeyValueと同じだったら...
+				 			for(String str2 : prohibit.keySet()){  //Init_KeyValueの要素数
+				 				System.out.println("str2 = " + str2);
+				 				for(int num = 0; num < prohibit.get(str2).size(); num++) {
+				 					System.out.println("prohibit.get(str2).get("+num+") = " + prohibit.get(str2).get(num));
+				 					if(str2.equals(str1) & prohibit.get(str2).get(num).equals(token)){
+				 						return false;
+				 					}
+				 				}
+				 			}
+				 		//}
+					}
+				  }
 			}
 			vars.put(vartoken, token);
 		}
@@ -901,7 +1053,9 @@ class Attributions {
 	List<String> rules = new ArrayList();
 	ArrayList<String> prohibitRules = new ArrayList<String>();
 	ArrayList<String> prohibitBlockStates = new ArrayList<String>();
-
+	//HashMap<String,String> keyValueProhibit =  new HashMap<String, String>();
+	HashMap<String,List<String>> keyValueProhibit =  new HashMap<String, List<String>>();
+	HashMap<String, String> a_productKeyOnValue = new HashMap<String, String>();
 	// デフォルト用コンストラクタ
 	public Attributions() {
 		rules.add("A is blue");
@@ -916,8 +1070,28 @@ class Attributions {
 		for(String rule: rules) {
 			addAttribution(rule);
 		}
-		addProhibitRules();
-		prohibitBlockStates = editStatementList(prohibitRules);
+		addProhibitRules();	//属性禁止制約
+		prohibitBlockStates = editStatementList(prohibitRules); //通常禁止制約
+
+		//いらないもの消去
+		System.out.println("prohibitBlockStates" + prohibitBlockStates);
+		ArrayList<Integer> deleteNumber = new ArrayList<Integer>();
+		int size = prohibitBlockStates.size();
+		for(int i = 0; i < prohibitBlockStates.size(); i++) {
+			if(prohibitBlockStates.get(i).contains("pyramid")
+			|| prohibitBlockStates.get(i).contains("trapezoid")
+			|| prohibitBlockStates.get(i).contains("ball")) {
+				deleteNumber.add(i);
+			}
+		}
+		for(int i = 0; i < deleteNumber.size(); i++) {
+			//System.out.println(deleteNumber.get(deleteNumber.size()-i-1));
+			prohibitBlockStates.remove((int)deleteNumber.get(deleteNumber.size()-i-1));
+		}
+		System.out.println("prohibitBlockStates" + prohibitBlockStates);
+
+		//禁止制約をHashMapに格納
+		keyValueProhibit(prohibitBlockStates);
 	}
 
 	// 自然言語用コンストラクタ
@@ -937,15 +1111,65 @@ class Attributions {
 		prohibitBlockStates = editStatementList(prohibitRules);
 	}
 
+	//禁止制約をHashMapのKeyとValueに格納
+	public void keyValueProhibit(ArrayList<String> list){
+		StringTokenizer st;
+		String tokenBuffer[];
+		ArrayList<String> buffer;
+		ArrayList<String> xValueList = new ArrayList<String>();
+		ArrayList<String> yValueList = new ArrayList<String>();
+		ArrayList<String> zValueList = new ArrayList<String>();
+		for(int i = 0; i < list.size(); i ++) {
+			//リストの1要素をトークンに分解して
+			st = new StringTokenizer(list.get(i));
+			//tokenBufferに格納
+			int length = st.countTokens();
+			tokenBuffer = new String[length];
+			for (int j = 0; j < length; j++) {
+				tokenBuffer[j] = st.nextToken();
+				System.out.println("tokenBuffer["+j+"] = " + tokenBuffer[j]);
+			}
+
+			//HashMapのKeyとValueを格納していく
+			if(tokenBuffer[0].equals("A")) {
+				xValueList.add(tokenBuffer[2]);
+				System.out.println("Aに追加します");
+			}
+			else if(tokenBuffer[0].equals("B")) {
+				yValueList.add(tokenBuffer[2]);
+				System.out.println("Bに追加します");
+			}
+			else if(tokenBuffer[0].equals("C")) {
+				zValueList.add(tokenBuffer[2]);
+				System.out.println("Cに追加します");
+			}
+
+			System.out.println("xValueList = " + xValueList);
+			System.out.println("yValueList = " + yValueList);
+			System.out.println("zValueList = " + zValueList);
+		}
+
+		keyValueProhibit.put("A", xValueList);
+		keyValueProhibit.put("B", yValueList);
+		keyValueProhibit.put("C", zValueList);
+
+		System.out.println("keyValueProhibit = " + keyValueProhibit);
+	}
+
 	// 禁止制約追加メソッド
 	private void addProhibitRules() {
 		System.out.println("###### Add prohibitRule ######");
-		prohibitRules.add("box on pyramid");
-		prohibitRules.add("box on ball");
-		prohibitRules.add("ball on pyramid");
-		prohibitRules.add("pyramid on ball");
-		prohibitRules.add("trapezoid on pyramid");
+		prohibitRules.add("ball on ball");
 		prohibitRules.add("trapezoid on ball");
+		prohibitRules.add("trapezoid on trapezoid");
+		prohibitRules.add("box on ball");
+		prohibitRules.add("box on box");
+		prohibitRules.add("pyramid on ball");
+
+		prohibitRules.add("ball on pyramid");
+		prohibitRules.add("box on pyramid");
+		prohibitRules.add("trapezoid on pyramid");
+		prohibitRules.add("pyramid on pyramid");
 		for(String prohibitRule: prohibitRules) {
 			System.out.println("****** ProhibitRule:"+ prohibitRule+" ******");
 		}
@@ -986,6 +1210,7 @@ class Attributions {
 		return attributions.containsKey(token);
 	}
 
+	//属性から通常状態に変換してくれる
 	ArrayList<String> editStatementList(ArrayList<String> statementList) {
 		System.out.println("++++++ EditStatement ++++++");
 		ArrayList<String> newStatementList = new ArrayList();

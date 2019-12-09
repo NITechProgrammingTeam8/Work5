@@ -1,0 +1,73 @@
+その1:「ユーザが自然言語（日本語や英語など）の命令文によってブロックを操作する」
+
+その2:「ユーザが自然言語（日本語や英語など）の命令文によって初期状態／目標状態を変更する」
+
+
+その1: 現在はランダムでオペレータを選択しているので,そこをいじる！
+	↓
+
+始めのプログラムやと, オペレータの選択にランダム値(int)を用いて
+int randInt = Math.abs(rand.nextInt()) % operators.size();
+Operator op = (Operator)operators.get(randInt);
+ってやってるけど, 課題5-2とか課題5-6やと, 自分でオペレータ選択しなあかんからさ,
+そのオペレータ選択は, あくまで, 数字で選ぼうと思っとる.
+
+
+/******************************************/
+
+[まっす～の制約禁止メソッドが上手く機能しない件に関して]
+*** GOALS ***[B on C, A on B]
+**B on C
+選択したオペレータ0:
+NAME: Place ?x0 on ?y0
+次のオペレータ:Place B on C
+*** GOALS ***[holding B]
+**holding B
+選択したオペレータ0:
+NAME: remove ?x1 from on top ?y1
+*** GOALS ***[B on ?y1, clear B, handEmpty]
+**B on ?y1
+オペレータ2:
+NAME: Place ?x4 on ?y4
+*** GOALS ***[holding B]
+**holding B
+選択したオペレータ0:
+NAME: pick up ?x5 from the table
+*** GOALS ***[ontable B, clear B, handEmpty]
+**ontable B
+*** GOALS ***[clear B, handEmpty]
+**clear B
+*** GOALS ***[handEmpty]
+**handEmpty
+Success !
+Success !
+副目標達成
+pick up B from the table
+Success !
+/++++++++++++++こっから+++++++++++++++++++++++++++++++++/
+副目標達成
+Place B on ?y4
+*** GOALS ***[clear B, handEmpty]
+**clear B
+[clear A, clear C, ontable A, ontable C, ontable pyramid, B on ?y4, clear B, handEmpty]
+*** GOALS ***[handEmpty]
+**handEmpty
+Success !
+Success !
+副目標達成
+remove B from on top ?y1
+Success !
+/++++++++++++++++ここまで+++++++++++++++++++++++++++++++++/
+副目標達成
+Place B on C
+*** GOALS ***[A on B]
+・
+・
+・
+***** This is a plan! *****
+pick up B from the table
+Place B on A
+remove B from on top A
+Place B on C
+pick up A from the table
+Place A on B
