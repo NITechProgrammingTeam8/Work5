@@ -384,22 +384,22 @@ public class Planner {
 			sortedGoalList.add(s);
 		}
 
-		for(int k = 0; k < sortGoalList.size(); k++){
-			String[] head = new String[sortGoalList.size()];
-			String[] tail = new String[sortGoalList.size()];
+		for(int k = 0; k < sortedGoalList.size(); k++){
+			String[] head = new String[sortedGoalList.size()];
+			String[] tail = new String[sortedGoalList.size()];
 
 			//各目標状態の先頭と末尾の文字を配列に格納
-			for(int i = 0; i < sortGoalList.size(); i++){
-				head[i] = sortGoalList.get(i).substring(0,1);
-				tail[i] = sortGoalList.get(i).substring(sortGoalList.get(i).length()-1);
+			for(int i = 0; i < sortedGoalList.size(); i++){
+				head[i] = sortedGoalList.get(i).substring(0,1);
+				tail[i] = sortedGoalList.get(i).substring(sortedGoalList.get(i).length()-1);
 			}
 
 			int flag = 0;
-			for(int i = 0; i < sortGoalList.size(); i++){
-				for(int j = i; j < sortGoalList.size()-i; j++){
+			for(int i = 0; i < sortedGoalList.size(); i++){
+				for(int j = i; j < sortedGoalList.size()-i; j++){
 					if(tail[i] == head[j]){
-						sortGoalList.add(j+1, sortGoalList.get(i));
-						sortGoalList.remove(i);
+						sortedGoalList.add(j+1, sortedGoalList.get(i));
+						sortedGoalList.remove(i);
 						flag += 1;
 						break;
 					}

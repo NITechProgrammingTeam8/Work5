@@ -64,7 +64,7 @@ public class Presenter {
 
     // ゴールをセット
     ArrayList<String> setGoalList(ArrayList<String> goalList) {
-        planner.goalList = sortGoalList(attributions.editStatementList(goalList));
+        planner.goalList = planner.sortGoalList(planner.attributions.editStatementList(goalList));
         return planner.goalList;
     }
 
