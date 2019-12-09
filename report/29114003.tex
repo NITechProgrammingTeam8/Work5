@@ -92,12 +92,12 @@ Presenterを実装するにあたり，以下のような方針を立てた．
 
 １．に関して，MVPアーキテクチャを導入し，GUIとPlanner間のデータのやり取りを，Presenterによって緩衝することで，拡張性の向上とGUI担当者の負担軽減を図った．
 
-２．に関して，GUI担当者が受け取りやすい渡し方を相談して決めることで，柔軟に対応した． \\
+２．に関して，GUI担当者が受け取りやすい渡し方を相談して決めることで，柔軟に対応した．
 
 \subsection{実装}
 Presenter.javaには以下のクラスが含まれる．
 \begin{description}
-\item[Presenter] テスト用のmainメソッド，擬似的な各種のゲッタやセッタ，導出過程をPlannerから取得するメソッド等を実装したクラス．
+\item[Presenter] テスト用のmainメソッド，ゲッタ，加工後のデータを受け取れるセッタ，導出過程をPlannerから取得するメソッド等を実装したクラス．
 \end{description}
 
 \subsubsection{Planner.javaのデータを，外部から取り出し，セットできるように改良する．}
@@ -152,9 +152,11 @@ pick up ?x from the table
 \end{lstlisting}
 
 \subsection{考察}
-今回のPresenterは特にやることがなく，GUI側の負担が大きいように感じた．しかし，GUI制作経験のある身として，可能な限りGUIが扱いやすいようなPresenterとなるよう心がけた．例えば，プランの過程の渡し方は，Operatorを少し書き加えて実現したことで，変数束縛も簡単に一緒に取得できるようにしたことや，String型でも過程を受け取れるようにしたことでGUI側で行うべき処理を減らせるようにしたことである．
+今回，Presenter側では特にやることがなく，GUI側の負担が大きいように感じた．しかし，GUI制作経験のある身として，可能な限りGUIが扱いやすいようなPresenterとなるよう心がけた．例えば，プランの過程の渡し方は，Operatorを少し書き加えて実現したことで，変数束縛も簡単に一緒に取得できるようにしたことや，String型でも過程を受け取れるようにしたことでGUI側で行うべき処理を減らせるようにしたことである．
 
 しかし，今回の課題も前回同様最初はどのような形で値を渡すかで悩むこととなった．前回よりも早く意識のすり合わせと進捗の説明を担当者間で共有できたため，今回はよりスムーズに実装に漕ぎ着けたのだと考えられる．
+
+また，GUIとPresenterの分担を交代してやってみることで，GUIの面ではレイアウトの仕方や表示のための工夫，Presenterの面ではPlanner等の元のプログラムから途中のデータを引き継いだり引き渡すことの難しさやすべき考慮等を学ぶことができた．このように，ある程度経験がついた状態で役割を大胆に変えてみることは，お互いのプログラミングスキル向上を促進し合える一つの手だと考えられる．
 
 \section{発展課題5-7}
 \begin{screen}
@@ -205,9 +207,9 @@ C\#スクリプトでは以下のものが実装されている．
 
 そこで，円環体の衝突判定にはAsset StoreからSAColliderBuilderをインポートし，それを用いることにした．SAColliderBuilderのコンポーネントSAMeshColliderBuilderからSplit Polygon Normalをオンにし，Shape TypeをMeshに，Mesh TypeをConvex Hullにすることで，Rigidbodyとしての挙動を残したまま，穴を含む正確な衝突判定を実現できた．
 
-しかしこれをプレハブ化すると，SAColliderBuilderが正常な挙動がなされず，再度床をすり抜けるようになってしまった．設定を弄っていると''Non-convex MeshCollider with non-kinematic Rigidbody is no longer supported since Unity 5.''といったエラーが出たことから，MeshColliderとRigidbodyは相性が悪いと考えられたため，そもそも円環体の当たり判定の方法を変えることにした．
+しかしこれをプレハブ化すると，SAColliderBuilderが正常な挙動がなされず，再度床をすり抜けるようになってしまった．設定を弄っていると''Non-convex MeshCollider with non-kinematic Rigidbody is no longer supported since Unity 5.''といったエラーが出たことから，MeshColliderとRigidbodyは相性が悪いと考えられたため，そもそもの円環体の当たり判定の仕様を変えることにした．
 
-判定にはSphere Colliderを組み合わせて行い，円環体の子オブジェクトとして衝突用のオブジェクトを持たせた．
+判定にはSphere Colliderを組み合わせて行い，円環体の子オブジェクトとして衝突用のオブジェクトを作成した．
 
 SAColliderBuilderで実装した改良前の衝突判定と，Sphere Colliderを組み合わせで実装した改良後の衝突判定を
 図\ref{fig:bwp1}と図\ref{fig:bwp2}に示す．
@@ -231,7 +233,7 @@ SAColliderBuilderで実装した改良前の衝突判定と，Sphere Colliderを
 このように，円環体の当たり判定が簡略されながらも充分に実現されていることが分かる．Sphere Colliderで実現したことにより，プレハブ化してもRigidbodyとの併用が問題なく行うことができた．
 
 \subsubsection{プランニングを行えるようにスクリプトを作成する．}
-Clicked.csについて，クリックされたときにまずフォーカス対象のオブジェクトをnullにしている．次にクリックしたオブジェクトの取得をRaycastを用いて行うが，操作対象外の床等のオブジェクトをフォーカス対象外にする必要があった．これはフォーカス対象のブロックにPlanというタグを統一して付けることで，CompareTagからその判定を行えるようにした．また，円環体の当たり判定である子オブジェクトをクリックで検出したとき，親オブジェクトを取り扱うように，rootフィールドを用いてその値を取得した．
+Clicked.csについて，クリックされたときにまずフォーカス対象のオブジェクトをnullにしている．次にクリックしたオブジェクトの取得をRaycastを用いて行うが，ここで操作対象外である床等のオブジェクトをフォーカス対象外にする必要があった．これはフォーカス対象のブロックにPlanというタグを統一して付けることで，CompareTagからその判定を行えるようにした．また，クリック時に円環体の当たり判定である子オブジェクトを検出したとき，親オブジェクトを取り扱うように，rootフィールドを用いてその値を取得した．
 
 クリックしたときに実行されるUpdateメソッドは以下のとおりである．
 
@@ -262,7 +264,7 @@ Clicked.csについて，クリックされたときにまずフォーカス対�
     }
 \end{lstlisting}
 
-Operating.csでは，Clickedクラスで取得したオブジェクトの移動のために，GetKeyメソッドを用いてキーボードの入力判定を行った．初めはスクリプト内で一時的に対象のオブジェクトのRigidbodyのisKinematicをtrueにしてtransformのpositionにVector3を足し合わせることで移動させていたが，それだと摩擦の判定が行われなかったり，衝突判定を貫通して移動できてしまったりという問題があった．これはisKinematicをtrueにしたことが原因であると分かった．そこで，positionに足し合わせるのではなくAddForceでVector3を足し合わせるようにしたことで，isKinematicをfalseのまま物理的制約に準じた物体の移動を実現することが出来た．
+Operating.csでは，Clickedクラスで取得したオブジェクトの移動のために，GetKeyメソッドを用いてキーボードの入力判定を行う．初めはスクリプト内で一時的に対象のオブジェクトのRigidbodyのisKinematicをtrueにしてtransformのpositionにVector3を足し合わせることで移動させていたが，それだと摩擦の判定が行われなかったり，衝突判定を貫通して移動できてしまったりするという問題があった．これはisKinematicをtrueにしたことが原因であると分かった．そこで，positionに足し合わせるのではなくAddForceでVector3を足し合わせるようにしたことで，isKinematicをfalseのまま物理的制約に準ずる物体の移動を実現することが出来た．
 
 キーボード入力時に挙動を示すOperatingクラスは以下の様になっている．
 
