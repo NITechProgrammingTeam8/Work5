@@ -26,13 +26,13 @@ public class Planner {
 		initOperators();
 		attributions = new Attributions();
 		/*
-		goalList = initGoalList();
+		goalList = sortGoalList(initGoalList());
 		initialState = initInitialState();
 		*/
 		//ゴールと初期状態に属性をしてする場合
 		//
 		System.out.println("コンストラクタで初期化します");
-		goalList = attributions.editStatementList(initAttributeGoalList());
+		goalList = sortGoalList(attributions.editStatementList(initAttributeGoalList()));
 		initialState = attributions.editStatementList(initAttributeInitialState());
 		//
 	}
@@ -374,7 +374,6 @@ public class Planner {
 		//goalList.add("ontable A");
 		//goalList.add("ontable B");
 		//goalList.add("ontable C");
-		goalList = sortGoalList(goalList);
 		return goalList;
 	}
 
