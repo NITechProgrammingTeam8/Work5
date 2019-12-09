@@ -26,13 +26,13 @@ public class Planner {
 		initOperators();
 		attributions = new Attributions();
 		/*
-		goalList = initGoalList();
+		goalList = sortGoalList(initGoalList());
 		initialState = initInitialState();
 		*/
 		//ゴールと初期状態に属性をしてする場合
 		//
 		System.out.println("コンストラクタで初期化します");
-		goalList = attributions.editStatementList(initAttributeGoalList());
+		goalList = sortGoalList(attributions.editStatementList(initAttributeGoalList()));
 		initialState = attributions.editStatementList(initAttributeInitialState());
 		//
 	}
@@ -374,30 +374,32 @@ public class Planner {
 		//goalList.add("ontable A");
 		//goalList.add("ontable B");
 		//goalList.add("ontable C");
-		goalList = sortGoalList(goalList);
 		return goalList;
 	}
 
 	//目標状態を問題が起こらないように並べ替える（課題５−1）
 	public ArrayList<String> sortGoalList(ArrayList<String> goalList){
 		ArrayList<String> sortedGoalList = new ArrayList<String>();
+		for(String s : goalList) {
+			sortedGoalList.add(s);
+		}
 
-		for(int k = 0; k < goalList.size(); k++){
-			String[] head = new String[goalList.size()];
-			String[] tail = new String[goalList.size()];
+		for(int k = 0; k < sortedGoalList.size(); k++){
+			String[] head = new String[sortedGoalList.size()];
+			String[] tail = new String[sortedGoalList.size()];
 
 			//各目標状態の先頭と末尾の文字を配列に格納
-			for(int i = 0; i < goalList.size(); i++){
-				head[i] = goalList.get(i).substring(0,1);
-				tail[i] = goalList.get(i).substring(goalList.get(i).length()-1);
+			for(int i = 0; i < sortedGoalList.size(); i++){
+				head[i] = sortedGoalList.get(i).substring(0,1);
+				tail[i] = sortedGoalList.get(i).substring(sortedGoalList.get(i).length()-1);
 			}
 
 			int flag = 0;
-			for(int i = 0; i < goalList.size(); i++){
-				for(int j = i; j < goalList.size()-i; j++){
+			for(int i = 0; i < sortedGoalList.size(); i++){
+				for(int j = i; j < sortedGoalList.size()-i; j++){
 					if(tail[i] == head[j]){
-						goalList.add(j+1, goalList.get(i));
-						goalList.remove(i);
+						sortedGoalList.add(j+1, sortedGoalList.get(i));
+						sortedGoalList.remove(i);
 						flag += 1;
 						break;
 					}

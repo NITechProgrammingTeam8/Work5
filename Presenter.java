@@ -39,31 +39,32 @@ public class Presenter {
 
     // オペレータ一覧の取得
     // 各OperatorはgetName(), getIfList(), getAddList(), getDeleteList()メソッドで各値を取得できる．
-    // 初期状態とゴールが同じ時は要素数0のリストを返し，禁止制約によりゴールできない場合はnullを返す．
     ArrayList<Operator> getOperatorList() {
         return planner.operators;
     }
 
     // 過程を文字列で取得
+    // 初期状態とゴールが同じ時は要素数0のリストを返し，禁止制約によりゴールできない場合はnullを返す．
     ArrayList<String> getPlan() {
         return planner.planResult;
     }
 
     // 適用したオペレーション(各ステップごと)
     // getBinding()で変数束縛のHashMap<String, String>を取得できる．
+    // 初期状態とゴールが同じ時は要素数0のリストを返し，禁止制約によりゴールできない場合はnullを返す．
     ArrayList<Operator> getStepList() {
         return planner.planUnifiedResult;
     }
 
     // 初期状態をセット
     ArrayList<String> setInitialState(ArrayList<String> initialState) {
-        planner.initialState = initialState;
+        planner.initialState = planner.attributions.editStatementList(initialState);
         return planner.initialState;
     }
 
     // ゴールをセット
     ArrayList<String> setGoalList(ArrayList<String> goalList) {
-        planner.goalList = goalList;
+        planner.goalList = planner.sortGoalList(planner.attributions.editStatementList(goalList));
         return planner.goalList;
     }
 
