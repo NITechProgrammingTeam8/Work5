@@ -380,23 +380,26 @@ public class Planner {
 	//目標状態を問題が起こらないように並べ替える（課題５−1）
 	public ArrayList<String> sortGoalList(ArrayList<String> goalList){
 		ArrayList<String> sortedGoalList = new ArrayList<String>();
+		for(String s : goalList) {
+			sortedGoalList.add(s);
+		}
 
-		for(int k = 0; k < goalList.size(); k++){
-			String[] head = new String[goalList.size()];
-			String[] tail = new String[goalList.size()];
+		for(int k = 0; k < sortGoalList.size(); k++){
+			String[] head = new String[sortGoalList.size()];
+			String[] tail = new String[sortGoalList.size()];
 
 			//各目標状態の先頭と末尾の文字を配列に格納
-			for(int i = 0; i < goalList.size(); i++){
-				head[i] = goalList.get(i).substring(0,1);
-				tail[i] = goalList.get(i).substring(goalList.get(i).length()-1);
+			for(int i = 0; i < sortGoalList.size(); i++){
+				head[i] = sortGoalList.get(i).substring(0,1);
+				tail[i] = sortGoalList.get(i).substring(sortGoalList.get(i).length()-1);
 			}
 
 			int flag = 0;
-			for(int i = 0; i < goalList.size(); i++){
-				for(int j = i; j < goalList.size()-i; j++){
+			for(int i = 0; i < sortGoalList.size(); i++){
+				for(int j = i; j < sortGoalList.size()-i; j++){
 					if(tail[i] == head[j]){
-						goalList.add(j+1, goalList.get(i));
-						goalList.remove(i);
+						sortGoalList.add(j+1, sortGoalList.get(i));
+						sortGoalList.remove(i);
 						flag += 1;
 						break;
 					}
