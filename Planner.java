@@ -7,6 +7,8 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
+import sun.jvm.hotspot.utilities.IntArray;
+
 /*
 class Store{
 
@@ -31,6 +33,11 @@ public class Planner {
 	ArrayList<String> planResult;
 	ArrayList<Operator> planUnifiedResult;
 	HashMap<String, String> p_productKeyOnValue;
+	//記憶用変数
+	ArrayList<Integer> opIndex;
+	ArrayList<String> mGoal;
+	ArrayList<ArrayList<String>> mState;
+	
 
 	public static void main(String argv[]) {
 		(new Planner()).start();
@@ -67,6 +74,7 @@ public class Planner {
 
 	public void start() {
 		HashMap<String, String> theBinding = new HashMap();
+	
 		plan = new ArrayList<Operator>();
 		System.out.println("goalList = \n" + goalList);
 		System.out.println("initGoalList() = \n" + initGoalList());
@@ -101,6 +109,11 @@ public class Planner {
 	}
 
 	private boolean planning(ArrayList<String> theGoalList, ArrayList<String> theCurrentState, HashMap theBinding) {
+		//繰り返し処理用変数のコンストラクタ生成
+		opIndex = new ArrayList<Integer>();
+		mGoal = new ArrayList<String>();
+		mState = new ArrayList<ArrayList<String>>();
+		
 		System.out.println("*** GOALS ***" + theGoalList);
 		if (theGoalList.size() == 1) {
 			String aGoal = (String) theGoalList.get(0);
@@ -193,6 +206,7 @@ public class Planner {
 		}
 
 		/**********************オペレータの選択********************************************/
+		/*
 		//1.ランダム用
 		//
 		int randInt = Math.abs(rand.nextInt()) % operators.size();
@@ -200,16 +214,89 @@ public class Planner {
 		operators.remove(randInt);
 		operators.add(op);
 		//
+		*/
 
 		//
 		//現状態と目標の表示
+		ArrayList<String> cState = new ArrayList<String>();
 		System.out.println("現在の目標\n" + theGoal);
 		System.out.println("現在の状態");
 		for(int i = 0; i< theCurrentState.size(); i++) {
 			if(!theCurrentState.get(i).contains("?")) {
+				cState.add(theCurrentState.get(i));
 				System.out.println(theCurrentState.get(i));
 			}
 		}
+
+		
+		if(opIndex.size() == 0){
+			//一回め
+			int randInt = Math.abs(rand.nextInt()) % operators.size();
+  			Operator op = (Operator)operators.get(randInt);
+			operators.remove(randInt);
+			operators.add(op);
+
+			opIndex.add(randInt);
+			mGoal.add(theGoal);
+			mState.add(cState);
+		}
+
+		else{
+			//二回目以降
+			int flag = 0;
+			while(flag == 0){
+				//オペレータを選択するための変数を生成
+				int randInt = Math.abs(rand.nextInt()) % operators.size();
+				//randIntがpoIndexにあるか判定、なかったらそのまま実行
+				if(!(opIndex.contains(randInt))){
+					Operator op = (Operator)operators.get(randInt);
+					operators.remove(randInt);
+					operators.add(op);
+					//opIndex,state,goalを記憶
+					opIndex.add(randInt);
+					mGoal.add(theGoal);
+					mState.add(cState);
+					flag = 1;
+				}
+
+				//同じpoIndexで同じcGoalがあるか判定、なかったらそのまま実行
+				for(int i = 0; i < opIndex.size(); i++){
+					//opIndexとrandIntが同じで
+					if(opIndex.get(i) == randInt){
+						//その時のmGoalがtheGoalと同じなら
+						if(mGoal.get(i) == theGoal){
+						
+							//cStateを比較
+							for(String s : mState.get(i)){
+								if(!(cState.contains(s))){
+									Operator op = (Operator)operators.get(randInt);
+									operators.remove(randInt);
+									operators.add(op);
+									//opIndex,state,goalを記憶
+									opIndex.add(randInt);
+									mGoal.add(theGoal);
+									mState.add(cState);
+									flag = 1;
+								}
+							}
+							for(String s : cState){
+								if(!(mState.get(i)).contains(s)){
+									Operator op = (Operator)operators.get(randInt);
+									operators.remove(randInt);
+									operators.add(op);
+									//opIndex,state,goalを記憶
+									opIndex.add(randInt);
+									mGoal.add(theGoal);
+									mState.add(cState);
+									flag = 1;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
 
 		/*
 		//3.その他開発用  → おすすめ表示用に！
