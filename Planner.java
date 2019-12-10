@@ -72,10 +72,14 @@ public class Planner {
 		System.out.println("initGoalList() = \n" + initGoalList());
 		if(goalList.size() < initGoalList().size()) {
 			System.out.println("禁止制約によってゴールが成立しなくなりました");
+			planResult = null;
+			planUnifiedResult  = null;
 			return;
 		}
 		if(initialState.size() == 0) {
 			System.out.println("初期状態がありません");
+			planResult = null;
+			planUnifiedResult  = null;
 			return;
 		}
 		planning(goalList, initialState, theBinding);
