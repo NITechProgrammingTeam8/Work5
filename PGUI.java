@@ -58,6 +58,7 @@ public class PGUI extends JFrame implements ActionListener{
   String[] iconName;
   String no;
   ArrayList<String> results;
+  ArrayList<String> result;
   ArrayList<Operator> pUR;
   ArrayList<String> initialState; // テキストフィールド入力
   ArrayList<String> goalList;
@@ -139,21 +140,20 @@ public class PGUI extends JFrame implements ActionListener{
     frame.setVisible(true);
   }
 
-  // その時使っていた属性データしか残らない(再実行時)？
-  // 枠を超える出力のスクロールバー(結果描画の対処)
-  // 禁止制約
-  // 属性が被っているものを入出力で指定したら禁止メッセージ
-  // 属性名指定のプランニング
-
   PGUI(){
 	  // プレゼンターとの連結
 	  presenter = new Presenter();
 	  // 結果の格納(メソッド呼び出し)
 	  results = new ArrayList<>();
-	  ArrayList<String> result = presenter.getPlan();
-	  results = new ArrayList<>(result);
-	  // 初期状態の追加
-	  results.add(0, "default position");
+	  result = presenter.getPlan();
+	  if (result != null) {
+		  results = new ArrayList<>(result);
+		  results.add(0, "default position");
+	  } else {
+		  // 禁止制約に引っかかってnullになった時
+		  results = new ArrayList<>();
+		  results.add("default position");
+	  }
 	  // 結果ステップデータの取得
 	  pUR = new ArrayList<>();
 	  pUR = presenter.getStepList();
@@ -181,7 +181,7 @@ public class PGUI extends JFrame implements ActionListener{
 	  // 初期状態表示用
 	  gIS = presenter.getInitialState();
 
-	  // 禁止制約の格納(メソッド呼び出し？)
+	  // 禁止制約の格納
 	  prohibitRules = new ArrayList<>();
 	  prohibitRules.add("box on pyramid");
 	  prohibitRules.add("box on ball");
@@ -239,16 +239,17 @@ public class PGUI extends JFrame implements ActionListener{
    	ArrayList<String> istrs  = new ArrayList<>(Arrays.asList(iStrs));
    	// テキストフィールドにもう一度表示させるため、入力言語のままでOK
    	initialState = new ArrayList<>( istrs );
-	// 初期状態のセットと返却(今はこれだと使えないので、ごたくくんのプログラムが出来たら使う)
+	// 初期状態のセットと返却(今は使えない)
    	gIS = presenter.setInitialState(istrs);
    	// 【仮】上書き
    	gIS = new ArrayList<>( istrs );
+   	//String gStr = gArea.getText();
    	gStr = gStr.replaceAll("Default", "Black");
     gStr = gStr.replaceAll("default", "box");
    	gStr = gStr.replaceAll("\\\\n", "\r\n");
    	String[] gStrs = gStr.split("\\\n");
    	ArrayList<String> gstrs  = new ArrayList<>(Arrays.asList(gStrs));
-  	ArrayList<String> g = presenter.setGoalList(gstrs); // 使わないか(形としては使える)
+  	ArrayList<String> g = presenter.setGoalList(gstrs); // 使わない(形としては使える)
   	// ゴールは状態は分からず、データの内容が反映できればOK
   	goalList = new ArrayList<>( gstrs );
 
@@ -282,10 +283,17 @@ public class PGUI extends JFrame implements ActionListener{
     presenter.restart();
     pUR = presenter.getStepList();
     //pUR = null; // 【仮】実験用
-    // pURがnullのときは、プランは空リスト？
-    ArrayList<String> result = presenter.getPlan();
-    results = new ArrayList<>(result);
-    results.add(0, "default position");
+    // pURがnullのとき
+    result = presenter.getPlan();
+    //result = null; // 【仮】実験用
+    if (result != null) {
+    	results = new ArrayList<>(result);
+    	results.add(0, "default position");
+    } else {
+    	// 禁止制約に引っかかってnullになった時
+    	results = new ArrayList<>();
+    	results.add("default position");
+    }
     page1.removeAll();
     createResultPage(pUR);
     createButton();
@@ -347,6 +355,7 @@ public class PGUI extends JFrame implements ActionListener{
     			colorlist.setEnabled(true);
     			shapelist.setEnabled(true);
     			modelName.addElement(newNameText.getText());
+    			//System.out.println(":::" + modelName.get(0));
     			modelColor.addElement(color);
     			modelShape.addElement(shape);
     			namelist.ensureIndexIsVisible(modelName.getSize() - 1);
@@ -413,6 +422,7 @@ public class PGUI extends JFrame implements ActionListener{
             	}
                 int index = namelist.getSelectedIndex();
                 // 名前は変えない
+                //modelName.set(index, newNameText.getText());
                 colorlist.setEnabled(true);
             	shapelist.setEnabled(true);
             	modelColor.set(index, color);
@@ -447,6 +457,7 @@ public class PGUI extends JFrame implements ActionListener{
     		}
     	}
     }
+
   }
 
   public void createResultPage(ArrayList<Operator> pUR) {
@@ -632,7 +643,8 @@ public class PGUI extends JFrame implements ActionListener{
 	  card.get(0).add(page1);
 
 	  // 初期状態の取得
-	  ArrayList<String> blocks = new ArrayList<>();
+	  ArrayList<String> blocks = new ArrayList<>();  // 入力された名前
+	  ArrayList<String> DANblocks = new ArrayList<>();  // 正式な'名前'
 	  ArrayList<String> dataTable = new ArrayList<>();
 	  ArrayList<String> dataOn = new ArrayList<>();
 	  for (String gis : gIS) {
@@ -640,18 +652,20 @@ public class PGUI extends JFrame implements ActionListener{
 			  String[] state = gis.split(" ", 0);
 			  if (Attribution.get(state[1]) == null) {
 				  // 指定が属性ではないとき
-				  if (blocks.indexOf(state[1]) < 0) {
+				  if (DANblocks.indexOf(state[1]) < 0) {
 					  // 要素が入っていなければ入れる
 					  blocks.add(state[1]);
+					  DANblocks.add(state[1]);
 				  }
 			  } else if (Attribution.get(state[1]) == 1) {
 				  // 指定が色属性のとき
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelColor.get(i)).equals(state[1])) {
 						  // 色名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[1]);
 						  }
 					  }
 				  }
@@ -660,9 +674,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelShape.get(i)).equals(state[1])) {
 						  // 形状名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[1]);
 						  }
 					  }
 				  }
@@ -672,8 +687,9 @@ public class PGUI extends JFrame implements ActionListener{
 			  String[] state = gis.split(" ", 0);
 			  if (Attribution.get(state[1]) == null) {
 				  // 指定が属性ではないとき
-				  if (blocks.indexOf(state[1]) < 0) {
+				  if (DANblocks.indexOf(state[1]) < 0) {
 					  // 要素が入っていなければ入れる
+					  DANblocks.add(state[1]);
 					  blocks.add(state[1]);
 				  }
 			  } else if (Attribution.get(state[1]) == 1) {
@@ -681,9 +697,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelColor.get(i)).equals(state[1])) {
 						  // 色名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[1]);
 						  }
 					  }
 				  }
@@ -692,9 +709,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelShape.get(i)).equals(state[1])) {
 						  // 形状名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[1]);
 						  }
 					  }
 				  }
@@ -704,8 +722,9 @@ public class PGUI extends JFrame implements ActionListener{
 			  String[] state = gis.split(" ", 0);
 			  if (Attribution.get(state[0]) == null) {
 				  // 指定が属性ではないとき
-				  if (blocks.indexOf(state[0]) < 0) {
+				  if (DANblocks.indexOf(state[0]) < 0) {
 					  // 要素が入っていなければ入れる
+					  DANblocks.add(state[0]);
 					  blocks.add(state[0]);
 				  }
 			  } else if (Attribution.get(state[0]) == 1) {
@@ -713,9 +732,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelColor.get(i)).equals(state[0])) {
 						  // 色名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[0]);
 						  }
 					  }
 				  }
@@ -724,17 +744,19 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelShape.get(i)).equals(state[0])) {
 						  // 形状名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[0]);
 						  }
 					  }
 				  }
 			  }
 			  if (Attribution.get(state[2]) == null) {
 				  // 指定が属性ではないとき
-				  if (blocks.indexOf(state[2]) < 0) {
+				  if (DANblocks.indexOf(state[2]) < 0) {
 					  // 要素が入っていなければ入れる
+					  DANblocks.add(state[2]);
 					  blocks.add(state[2]);
 				  }
 			  } else if (Attribution.get(state[2]) == 1) {
@@ -742,9 +764,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelColor.get(i)).equals(state[2])) {
 						  // 色名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[2]);
 						  }
 					  }
 				  }
@@ -753,9 +776,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  for (int i = 0; i < modelName.size(); i++) {
 					  if (((String)modelShape.get(i)).equals(state[2])) {
 						  // 形状名と同じ入力の時
-						  if (blocks.indexOf((String)modelName.get(i)) < 0) {
+						  if (DANblocks.indexOf((String)modelName.get(i)) < 0) {
 							  // 要素が入っていなければ入れる
-							  blocks.add((String)modelName.get(i));
+							  DANblocks.add((String)modelName.get(i));
+							  blocks.add(state[2]);
 						  }
 					  }
 				  }
@@ -764,7 +788,7 @@ public class PGUI extends JFrame implements ActionListener{
 		  }
 	  }
 
-	  // 変数値決定
+	  // 決めなきゃいけない変数
 	  row = blocks.size() + 2;
 	  col = blocks.size();
 	  arm = new ImageIcon("image/arm't.png");
@@ -772,7 +796,7 @@ public class PGUI extends JFrame implements ActionListener{
 	  iconName = new String[col];
 	  // ここで、ブロックの名前とどの画像かの一致をさせる(HashMap)
 	  for (int i = 0; i < col; i++) {
-		  iconName[i] = blocks.get(i);
+		  iconName[i] = DANblocks.get(i);
 	  }
 	  armname = "   ";
 	  icon = new ImageIcon[col];
@@ -781,7 +805,7 @@ public class PGUI extends JFrame implements ActionListener{
 	  for (int i = 0; i < blocks.size(); i++) {
 		  boolean def = false;
 		  for (int j = 0; j < modelName.size(); j++) {
-			  if (blocks.get(i).equals((String)modelName.get(j))){
+			  if (DANblocks.get(i).equals((String)modelName.get(j))){
 				  // 定義された記号を使用しているとき
 				  String image = images[imageMapC.get((String)modelColor.get(j))][imageMapS.get((String)modelShape.get(j))];
 				  icon[i] = new ImageIcon(image);
@@ -846,7 +870,7 @@ public class PGUI extends JFrame implements ActionListener{
 		  iconX[ue] = iconX[sita] - 1;
 		  iconY[ue] = iconY[sita];
 	  }
-	  // レイアウトの設定(上書きが一番良い？)
+	  // レイアウトの設定
 	  for (int i = 0; i < row; i++) {
 		  for (int j = 0; j < col; j++) {
 			  p2Label[i][j] = new JLabel(no);
@@ -901,7 +925,6 @@ public class PGUI extends JFrame implements ActionListener{
 		  LineBorder inborder = new LineBorder(Color.red, 2);
 		  TitledBorder border = new TitledBorder(inborder,
 				  "Warning!!", TitledBorder.LEFT, TitledBorder.TOP);
-		  // 具体的に禁止制約に引っかかったことを伝える
 		  JLabel setumei = new JLabel("      This Goal is not allowed by ProhibitRules");
 		  hosoku.add(setumei);
 		  JLabel setumei2 = new JLabel("      Try to change Goal !");
@@ -913,6 +936,8 @@ public class PGUI extends JFrame implements ActionListener{
 		  kari.add(hosoku, BorderLayout.CENTER);
 		  prohibit.add(kari);
 		  prohibit.add(Box.createRigidArea(new Dimension(20,20)));
+		  // 禁止制約のパネルの表示方法
+		  // 属性名
 		  JPanel prohibit2_1 = new JPanel();
 		  prohibit2_1.setLayout(new BoxLayout(prohibit2_1, BoxLayout.PAGE_AXIS));
 		  for (int i = 0; i < modelName.size(); i++) {
@@ -1036,6 +1061,7 @@ public class PGUI extends JFrame implements ActionListener{
 				  }
 			  }
 		  }
+		  // 他ブロックの上に乗っているブロックの初期化
 		  ue = -1;
 		  sita = -1;
 		  for (String dataS : dataOn) {
@@ -1116,9 +1142,10 @@ public class PGUI extends JFrame implements ActionListener{
 				  armX = iconX[hXz] - 1;
 				  armY = iconY[hXz];
 			  } else if (pUR.get(i).getName().equals("put ?x down on the table")) {
-				  // xの操作,アームの操作
+				  // xの操作,アームの操作(改良の余地あり)
 				  iconX[hXz] = row - 1;
 				  armX = iconX[hXz] - 1;
+				  //ArrayList<Integer> umu = Arrays.asList(iconY);
 				  boolean umu;
 				  for (int j = 0; j < col; j++) {
 					  umu = true;
@@ -1135,7 +1162,7 @@ public class PGUI extends JFrame implements ActionListener{
 					  }
 				  }
 			  }
-			  // レイアウトの設定(上書きが一番良い？)
+			  // レイアウトの設定
 			  for (int k = 0; k < row; k++) {
 				  for (int j = 0; j < col; j++) {
 					  newLabel[k][j] = new JLabel(no);
@@ -1146,7 +1173,6 @@ public class PGUI extends JFrame implements ActionListener{
 				  newLabel[iconX[k]][iconY[k]] = new JLabel(icon[k]);
 				  newLabel[iconX[k]][iconY[k]].setText(iconName[k]);
 			  }
-			  // A on Aとかが許されるので、時々おかしくなってindex-1指定とかしてしまう
 			  newLabel[armX][armY] = new JLabel(arm);
 			  newLabel[armX][armY].setText(armname);
 			  // アイコンの挿入
@@ -1191,7 +1217,6 @@ public class PGUI extends JFrame implements ActionListener{
 	  // 最終ページのみ別で作成
 	  card.add(new JPanel());
 	  ArrayList<Operator> operators = presenter.getOperatorList();
-	
 	  JPanel tostring = new JPanel();
 	  tostring.setLayout(new BoxLayout(tostring, BoxLayout.PAGE_AXIS));
 	  int i = 1;
@@ -1209,24 +1234,34 @@ public class PGUI extends JFrame implements ActionListener{
 	  scrollpane.setPreferredSize(new Dimension(260, 310));
 	  BevelBorder border = new BevelBorder(BevelBorder.LOWERED);
 	  scrollpane.setBorder(border);
+	  JPanel Ope = new JPanel();
+	  Ope.setLayout(new BoxLayout(Ope, BoxLayout.PAGE_AXIS));
+	  Ope.add(new JLabel("Used Operator "));
+	  Ope.add(scrollpane);
 	  JPanel tostring2 = new JPanel();
 	  tostring2.setLayout(new BoxLayout(tostring2, BoxLayout.PAGE_AXIS));
 	  tostring2.setBackground(Color.WHITE);
-	  ArrayList<String> printResult = presenter.getPlan();
 	  tostring2.add(new JLabel("***** This is a plan! *****"));
-	  for (String printR : printResult) {
+	  if (result != null) {
+	  for (String printR : result) {
 		  tostring2.add(new JLabel(printR));
+	  }
 	  }
 	  JScrollPane scrollpane2 = new JScrollPane(tostring2);
 	  scrollpane2.setPreferredSize(new Dimension(200, 310));
 	  BevelBorder border2 = new BevelBorder(BevelBorder.LOWERED);
 	  scrollpane2.setBorder(border2);
-	  card.get(card.size()-1).add(scrollpane);
-	  card.get(card.size()-1).add(scrollpane2);
+	  JPanel Plan = new JPanel();
+	  Plan.setLayout(new BoxLayout(Plan, BoxLayout.PAGE_AXIS));
+	  Plan.add(new JLabel("Plan "));
+	  Plan.add(scrollpane2);
+	  card.get(card.size()-1).add(Ope);
+	  card.get(card.size()-1).add(Plan);
 
 	  cardPanel = new JPanel();
 	  layout = new CardLayout();
 	  cardPanel.setLayout(layout);
+
 	  // for文で回す必要あり
 	  cardPanel.add(card.get(0), "start");
 	  for (int j = 0; j <= cardPage; j++) {
@@ -1240,15 +1275,22 @@ public class PGUI extends JFrame implements ActionListener{
 
   public void createButton() {
 	    // カード移動用ボタン
+	    //JButton firstButton = new JButton("First");
 	    firstButton = new JButton("First");
 	    firstButton.addActionListener(this);
 	    firstButton.setActionCommand("First");
+
+	    //JButton prevButton = new JButton("Prev");
 	    prevButton = new JButton("Prev");
 	    prevButton.addActionListener(this);
 	    prevButton.setActionCommand("Prev");
+
+	    //JButton nextButton = new JButton("Next");
 	    nextButton = new JButton("Next");
 	    nextButton.addActionListener(this);
 	    nextButton.setActionCommand("Next");
+
+	    //JButton lastButton = new JButton("Last");
 	    lastButton = new JButton("Last");
 	    lastButton.addActionListener(this);
 	    lastButton.setActionCommand("Last");
@@ -1261,7 +1303,9 @@ public class PGUI extends JFrame implements ActionListener{
 	  btnPanel.add(prevButton);
 	  btnPanel.add(nextButton);
 	  btnPanel.add(lastButton);
+
 	  getContentPane().add(btnPanel, BorderLayout.PAGE_START);
 	  getContentPane().add(cardPanel, BorderLayout.CENTER);
   }
+
 }
