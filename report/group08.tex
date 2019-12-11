@@ -104,8 +104,7 @@ Place B on C
 pick up B from the table
 Place B on C
 \end{lstlisting}
-​
-これはプランニングがうまくいかず,中途半端な状態で終わってしまっている.\\
+​これはプランニングがうまくいかず,中途半端な状態で終わってしまっている.\\
 今回はこの現象を,目標状態を適切な順番に入れ替えるメソッドを実装することで解消した.
 
 \subsection{実装}
@@ -188,12 +187,13 @@ Place A on B
 これを,効果的な競合解消戦略に改良すべく考察し,実装せよ.
 \end{screen}
 \subsection{手法}
+\noindent (後藤担当) \\
 発展課題5-6を実装する際に利用した"ユーザーがオペレータを選択する方法"をもとに, デバックをしていき, 初期プログラムでは発生してしまう「Place A on A」や,  必須課題5-3での「Triangle on Ball」などの禁止制約をPlannigクラス, ないしはUnifierクラスを改善していった. PlannerクラスのplanningメソッドとplannnigAGoalメソッドの相互再帰構造においては, 図1をもとに簡単に説明をしたが, ここでは, その1つ1つの変数の内容まで踏み込み, UnifierクラスのMtachingメソッドまで掘り下げていく必要があった. \\
 
 まずは, 下の図を参考に, 問題点とその改良手法を示す.
 \begin{figure}[htbp]
  \begin{center}
-  %\includegraphics[width = 12cm, pagebox = cropbox, clip]{images/ishiduya.png}
+   \includegraphics[width = 12cm, pagebox = cropbox, clip]{images/ishiduya.png}
  \end{center}
  \caption[]{operetarsリストの動き}\label{fig:fig1.1}
 \end{figure}
@@ -201,7 +201,29 @@ Place A on B
 
 禁止制約もとい, 実際に生成されていく「X on Y」の関係は, 全てHashMapを使い, XをKeyとし, YをValueとして扱うことで, 物の上下関係を表現する.\\
 
+\noindent (小中担当) \\
+サンプルプログラムのままではオペレータの選択はランダムであるので,以下の実行例のように結果として同じ手順を繰り返してしまう,という現象が起きてしまう.
+\begin{lstlisting}[caption=繰り返しの実行例, label=mid]
+***** This is a plan! *****
+pick up B from the table
+Place B on A
+remove B from on top A
+Place B on A
+remove B from on top A
+Place B on A
+remove B from on top A
+Place B on C
+pick up A from the table
+Place A on A
+remove A from on top A
+Place A on A
+remove A from on top A
+Place A on B
+\end{lstlisting}
+本課題では,実行されたオペレーターとその時の目標状態及び現状態を記憶し,1回行ったオペレータが再度出てきた際に目標状態を現状態を記憶した履歴と比較することで,同じ処理が繰り返し起こらないようにした.
+
 \subsection{実装}
+\noindent (後藤担当) \\
 まずは, 属性をベースにした禁止制約をHashMapに格納していくプログラムを下に示す. これは, 課題5-3でかかわった属性クラスAttributionsで定義されている.
 \begin{lstlisting}[caption=禁止制約をHashMapに管理, label=src:No1]
 	//格納するHashMap
@@ -357,9 +379,97 @@ HashMap<String, String> productKeyOnValue;  //現在の[X on Y]関係
 	}
 \end{lstlisting}
 PlannerクラスとUnifierクラスで共通のリスト(produvtKeyOnValue)を共有しあい, 現在の[X on Y]の関係を保存共有する. PlannerクラスでUnifierクラスを呼び出し, その内容をトークンごとで分解し,[X on Y]の分解に基づき, KeyとValueを格納していく.
-実際に, varMatchingメソッドでは, 2つ目の引数のtokenが, 次のバインディング候補であるため, それが禁止制約リストのValue値と同じであればfalseを返すようにしている.
+実際に, varMatchingメソッドでは, 2つ目の引数のtokenが, 次のバインディング候補であるため, それが禁止制約リストのValue値と同じであればfalseを返すようにしている. \\
 
-\subsection{出力結果}
+\noindent (小中担当) \\
+実際に処理をしている部分のみを抜粋して以下に示す.\\
+なお,この処理はplanningAGoalメソッドの中（サンプルプログラムにおけるランダムでのオペレータ選択箇所）で行っている.
+
+\begin{lstlisting}[caption=繰り返し防止の処理, label=mid]
+  /現状態と目標の表示
+  ArrayList<String> cState = new ArrayList<String>();
+  System.out.println(“現在の目標\n” + theGoal);
+  System.out.println(“現在の状態“);
+  for(int i = 0; i< theCurrentState.size(); i++) {
+      if(!theCurrentState.get(i).contains(“?”)) {
+          cState.add(theCurrentState.get(i));
+          System.out.println(theCurrentState.get(i));
+      }
+  }
+  if(opIndex.size() == 0){
+      //一回め
+      int randInt = Math.abs(rand.nextInt()) % operators.size();
+      Operator op = (Operator)operators.get(randInt);
+      operators.remove(randInt);
+      operators.add(op);
+      opIndex.add(randInt);
+      mGoal.add(theGoal);
+      mState.add(cState);
+  }
+  else{
+      //二回目以降
+      int flag = 0;
+      while(flag == 0){
+          //オペレータを選択するための変数を生成
+          int randInt = Math.abs(rand.nextInt()) % operators.size();
+          //randIntがpoIndexにあるか判定、なかったらそのまま実行
+          if(!(opIndex.contains(randInt))){
+              Operator op = (Operator)operators.get(randInt);
+              operators.remove(randInt);
+              operators.add(op);
+              //opIndex,state,goalを記憶
+              opIndex.add(randInt);
+              mGoal.add(theGoal);
+              mState.add(cState);
+              flag = 1;
+          }
+          //同じpoIndexで同じcGoalがあるか判定、なかったらそのまま実行
+          for(int i = 0; i < opIndex.size(); i++){
+              //opIndexとrandIntが同じで
+              if(opIndex.get(i) == randInt){
+                  //その時のmGoalがtheGoalと同じなら
+                  if(mGoal.get(i) == theGoal){
+                      //cStateを比較
+                      for(String s : mState.get(i)){
+                          if(!(cState.contains(s))){
+                              Operator op = (Operator)operators.get(randInt);
+                              operators.remove(randInt);
+                              operators.add(op);
+                              //opIndex,state,goalを記憶
+                              opIndex.add(randInt);
+                              mGoal.add(theGoal);
+                              mState.add(cState);
+                              flag = 1;
+                          }
+                      }
+                      for(String s : cState){
+                          if(!(mState.get(i)).contains(s)){
+                              Operator op = (Operator)operators.get(randInt);
+                              operators.remove(randInt);
+                              operators.add(op);
+                              //opIndex,state,goalを記憶
+                              opIndex.add(randInt);
+                              mGoal.add(theGoal);
+                              mState.add(cState);
+                              flag = 1;
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+\end{lstlisting}
+
+まず全体の仕組みだが,基本的にはランダムでオペレーターの選択を行っている.ただし,選択されたオペレーターとその時の目標及び現状態が履歴にある場合はオペレーター番号を生成し直す,という形になっている.\\
+履歴は,選択されたオペレーターの番号を記憶するopIndexリスト,目標状態を記憶するmGoalリスト,現状態をリストの形で記憶するmStateリストにそれぞれ格納されている.\\
+1回目の実行は履歴がないのでサンプル通りランダムで実行し,2回目以降は下の履歴を参照する処理に入る.この判定はopIndexの長さが0かどうかで行っている.\\
+履歴参照の処理では,まず初めに今回ランダムで生成されたオペレーター番号が履歴にあるかを判定する.あった場合はwhile文から抜け出し,そのオペレーター番号をそのまま実行する.
+なかった場合は次の目標状態及び現状態を比較する繰り返し文に入る.\\
+この繰り返し文では,まず始めにオペレーター番号が同じである時のインデックスを取得し,mGoalリストの同じインデックスを参照し比較する.目標状態も同じ場合は最後同じように現状態を比較する.この時,現状態は複数の文からなるリストになっているため,リストのcontains.メソッドを用いて拡張for文により比較する.
+
+\subsection{実行例}
+\noindent (後藤担当) \\
 \begin{lstlisting}
 unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
 varMatchingで...?y3とB
@@ -389,12 +499,25 @@ theBinding{?y0=C, ?x0=B, ?y2=C, ?x2=B, ?y3=C, ?x3=B}
 上は出力結果の一部を示している. Attributesクラスでの禁止制約がPlannerクラスそして, Unifierクラスにうまく用いられ, keyProhibitとして出力されていることが分かる.\\
 はじめは {?y3とB}でマッチングを行うところであり, それが「X on Y」関係を持つように, HashMapのproductKeyOnValueに保存されている. そして, 「B on ?y3」に当てはまるものを禁止制約と照らし合わせている. 「B on A」や「B on B」が実行されようとしているので,禁止制約が発動していることがわかる. 次に「B on ?y3」に当てはまる候補として, Cが用いられ, 「B on C」は大丈夫であるので, {?y3=C}と具体化されている.
 
-\subsection{考察}
-PlannerクラスとUnifierクラスで共通のリストがあるおかげで, 離れたバインディ状態(?y3=?y2があり, その後?y3=Cとなる状態)でもしっかりと具体化することができてた. 上手く禁止制約条件をUnifyのMatchingメソッドまで行えたが, 「Aを取ってBの上に置く」と「AをBから取り除く」などのループ処理が行われているため, プランニングが無限に陥る可能性が取り除けていない. 制約条件ではじいたあとの処理をさらに考える必要があった.
+\noindent (小中担当) \\
+\begin{lstlisting}[caption=実行例, label=mid]
+  ***** This is a plan! *****
+  pick up B from the table
+  Place B on C
+  pick up A from the table
+  Place A on B
+  \end{lstlisting}
+  このように,同じ処理は行われず最短でプランニングが完了している.
 
-\subsection{感想}
-出力結果とプログラムを理解していくのがとても大変であった. 初期プログラムの出力だけでは, なにが起こっているのか全く分からない. 分岐箇所やメソッドに結果などを細かく出力していくことで, プログラムを解読できた.\\
-また, PlannerクラスはPlanningメソッドとPlanningAGoalメソッドの再帰構造によるバックトラックだったので, プログラムの改良がとても難しかった. 「Place A on B」を一つとっても, いろいろな処理をしたのちに, 最終的にこの結果が出てくるのであって, その内部構造の理解が必須だった. まだ, 改良点や, 不具合が多いので, これからの課題でさらに深めていきたい.
+
+\subsection{考察}
+\noindent (後藤担当) \\
+PlannerクラスとUnifierクラスで共通のリストがあるおかげで, 離れたバインディ状態(?y3=?y2があり, その後?y3=Cとなる状態)でもしっかりと具体化することができてた. 上手く禁止制約条件をUnifyのMatchingメソッドまで行えたが, 「Aを取ってBの上に置く」と「AをBから取り除く」などのループ処理が行われているため, プランニングが無限に陥る可能性が取り除けていない. 制約条件ではじいたあとの処理をさらに考える必要があった. \\
+\noindent (小中担当) \\
+競合解消戦略とはLEXやMEAのような物をさすのであろうが,今回はタイムタグという概念も無く,課題の示す競合解消戦略というものがなんであるのかを勝手に解釈した.
+本課題ではプランニングの際に同じオペレーターが繰り返し選択されてしまう場合があるので,それを解消することを目標と捉え,課題を進めた.\\
+実装するにあたって,同じオペレーターが繰り返されるのであれば,選択されるオペレーターを記憶しておいて処理すれば良い,という目論見は概ね正しいと感じた一方,planningAGoalメソッドが繰り返し実行されてしまうので記憶するリストを毎回定義できないことや,目標状態自体が多くの文から構成されている,という点で実装が難しく,かなり冗長なプログラムになってしまったように感じる.
+何より,1回目はどの道ランダムで選択しているので,本当の意味で競合解消戦略を取り入れているとは言え内容にも感じる.
 
 
 \section{必須課題5-3}
@@ -1353,18 +1476,16 @@ checkedStatesメソッドを,変化直後の状態集合に対して使用する
 ユーザの命令によるブロック操作を行う際, 何も考えずにただ漠然とブロックを動かしていては, プランニングの意味をなさない. 例えば「ブロックをA, B, Cの順に上から積んでいく」という目標が設定されている場合, オペレータは「Cの上にBを置く」のちに「Bの上にAを置く」とするのが理想であり, プランニングではその処理を行えなければならない. ここでユーザが「Cの上にAを置く」などでたらめなことをしてしまっては, プランニングの意味がない. そのため, ここにおける"ユーザによるブロック操作"の定義を, "プランニングを行っているユーザによるブロック操作"とする. \\
 具体的には, プログラムが"おすすめ"の操作をユーザに知らせる. ユーザはそのおすすめを参考に処理を選択し, 実行する. もちろんユーザはプランニングを行っているという仮定のもとでの話なので, 条件に合わないオペレータ選択(つまり, 現在の目標に関わる内容がオペレータのAdd-listに存在しない)場合は, そのユーザの選択はプランニングにそぐわないとして実行されず, 代わりにおすすめの処理が行われるとする.\\
 プログラムが勧める"おすすめ"のオペレータとは, 課題5-2で行った競合解消戦略によるオペレータ選択の内容である.\\
-​
-​
+
 ここで問題となるのは, オペレータを4つの中から選択できたとしても, 中身までは選択できない.上記の例をもう一度考えると, 副目標「B on C」に対して, 「Place B on C」という内容はできても, 「Place A on C」という処理は, 行えない. \\
-​
-​
+
 ブロック操作における競合解消戦略として, 教科書のプログラムではランダム関数を用いたオペレータの選択をしているが, その選択を適切に変える. 以下の2つの操作を試みている.
-​
+
 \begin{enumerate}
 \item 推論の最中にユーザーの入力により, オペレータをその都度選択していく
 \item ゴール状態と現在の状態を比べてより最適なオペレータを選択する
 \end{enumerate} 
-​
+
 この推論システムは大きく, plannnigメソッドとplannigAGoalメソッドを再帰的に呼び合うことで成り立っている.
 以下の図1を参考にしてほしい.
 \begin{figure}[htbp]
@@ -1373,21 +1494,20 @@ checkedStatesメソッドを,変化直後の状態集合に対して使用する
  \end{center}
  \caption[]{plannnigにおける相互メソッドの再帰構造}\label{fig:fig1.1}
 \end{figure}
-​
+
 plannningAGoalメソッドで, plannnigメソッドから1つ取り出された目標状態を見て, 現状態に含まれていなければ各ルールのAdd-listからUnifyできるオペレータを,  現状態に含まれていればそのまま次の目標へといった流れである. このplanningAGoalメソッドでルールを選ぶ方法をランダムから変えれば良いことが分かる.\\
-​
+
 ランダムにオペレータを選択する際に, 教科書のプログラムは選択したオペレーションを一度, リストから取り除き, その後リストの最後に格納しているが, それだと適切なオペレータを選択できない.
-​
+
 \begin{figure}[htbp]
  \begin{center}
   \includegraphics[width = 12cm, pagebox = cropbox, clip]{images/random.pdf}
  \end{center}
  \caption[]{operetarsリストの動き}\label{fig:fig1.1}
 \end{figure}
-​
 そのため, 図2のように, operatorsリストの順序を適切に扱うことで, 自由にオペレータを選択, 取り出すことにする.
-​
-​
+
+
 \subsection{実装}
 planningAGoalメソッドにおけるオペレータの選択においては, それぞれ新しくメソッドを作成し, そこで適切なオペレータの番号を返すことになっている. 推論の最中にオペレータを選択するSelectOperetorNLメソッドと,, 最適なオペレータ選択をするReccomendOperetorメソッドを作成した.
 \begin{lstlisting}[caption=オペレータ選択, label=src:No1]
@@ -1396,23 +1516,23 @@ planningAGoalメソッドにおけるオペレータの選択においては, �
   	Operator op = (Operator)operators.get(randInt);
 	operators.remove(randInt);
 	operators.add(op);
-	//cPoint = randInt;
-​
+  //cPoint = randInt;
+  
 	//2.発展課題5-6用
-	//int numOp = SelectOperatorNL();
-​
+  //int numOp = SelectOperatorNL();
+  
 	//3.その他開発用
-	int numOp = RecommentOperator(theGoal);
-​
+  int numOp = RecommentOperator(theGoal);
+  
 	/* 2.3のどちらかを使うときは,このコメントアウトを外す！
 	Operator op = (Operator)operators.get(numOp);
 	System.out.println("オペレータ内容は = " + op.name);
 	System.out.println("Thank you!");
 	cPoint = numOp;
 \end{lstlisting}
-​
-​
-​
+
+
+
 \begin{lstlisting}[caption=推論中におけるオペレータ選択, label=src:No1]
    /*
 	* 自然言語の命令によってオペレータの選択
@@ -1423,8 +1543,8 @@ planningAGoalメソッドにおけるオペレータの選択においては, �
 		String opString = null;
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("行う操作を入力してください");
-		opString = scanner.nextLine();
-​
+    opString = scanner.nextLine();
+    
 		if(opString.contains("Place")) {
 			opNumber = 0;
 		}
@@ -1441,7 +1561,7 @@ planningAGoalメソッドにおけるオペレータの選択においては, �
 	}
 \end{lstlisting}
 自然言語といっても, Placeやremoveなどを選ぶだけなので, 本質的な内容はできていない. 本来であれば, オペレータの中身（AやBなど）も選択したかったが, Plannnigと組みあわせて行うことは難しかった.
-​
+
 \begin{lstlisting}[caption=最適なオペレータ選択, label=src:No1]
      /*
 	* 最適な操作をできるようなオペレータの選択
@@ -1460,7 +1580,7 @@ planningAGoalメソッドにおけるオペレータの選択においては, �
 	}
 \end{lstlisting}
 現状は上に積むことしか考えていないので, 　「A on B」のような目標では,　必ずオペレータの0番目「Place ?x on ?y」を選択し, 「holding A」の目標では, 必ず2番目のオペレータ「pick up ?x from the table」を選択するようになっている.
-​
+
 \subsection{実行例}
 最終的なプランニングの結果を以下に示す.\\
 以下はランダムなオペレータの選択をしている.
@@ -1477,246 +1597,94 @@ Place B on C
 pick up A from the table
 Place A on B
 \end{lstlisting}
-​
-次にオペレータ選択をチューニングした最適なプランニングを示す.
+次にプランニングによる最適解を"おすすめ"として表示させながらユーザーによるオペレータ選択の実行例を載せる.
 \begin{lstlisting}
-***** This is a plan! *****
-goalList = 
+goalList =
 [B on C, A on B]
-initGoalList() = 
+initGoalList() =
 [B on C, A on B]
 *** GOALS ***[B on C, A on B]
 **B on C
 現在の目標
 B on C
 現在の状態
-clear A
-clear B
-clear C
-ontable A
-ontable B
-ontable C
-ontable pyramid
-handEmpty
+[clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 おすすめは = Place ?x on ?y
 行う操作を入力してください
-Place B on A
+Place B on C
 オペレータ内容は = Place ?x on ?y
-Thank you!
-選択したオペレータ0:
-NAME: Place ?x0 on ?y0
-IF :[clear ?y0, holding ?x0]
-ADD:[?x0 on ?y0, clear ?x0, handEmpty]
-DELETE:[clear ?y0, holding ?x0]
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-varMatchingで...?x0とB
-productKeyOnValueで...{}
-keyOnValue[0] = B
-varMatchingで...?y0とC
-productKeyOnValueで...{}
-keyOnValue[1] = C
-productKeyOnValue = {B=C}
-Init_Key(str) = A
-Init_Key(str) = B
-Init_Key(str) = C
-Key = B Value = C
 unify成功
 オペレータの具体化:Place B on C
-その時の状態:[clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 *** GOALS ***[clear C, holding B]
 **clear C
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-theBinding{?y0=C, ?x0=B}
-Key = B Value = C
 [clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 *** GOALS ***[holding B]
 **holding B
 現在の目標
 holding B
 現在の状態
-clear A
-clear B
-clear C
-ontable A
-ontable B
-ontable C
-ontable pyramid
-handEmpty
+[clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 おすすめは = pick up ?x from the table
 行う操作を入力してください
 pick up B from the table
 オペレータ内容は = pick up ?x from the table
-Thank you!
-選択したオペレータ2:
-NAME: pick up ?x1 from the table
-IF :[ontable ?x1, clear ?x1, handEmpty]
-ADD:[holding ?x1]
-DELETE:[ontable ?x1, clear ?x1, handEmpty]
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-varMatchingで...?x1とB
-productKeyOnValueで...{B=C}
-Init_Key(str) = A
-Init_Key(str) = B
-Init_Key(str) = C
-Key = B Value = C
 unify成功
 オペレータの具体化:pick up B from the table
-その時の状態:[clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 *** GOALS ***[ontable B, clear B, handEmpty]
 **ontable B
-theBinding{?y0=C, ?x0=B, ?x1=B}
-Key = B Value = C
 [clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 *** GOALS ***[clear B, handEmpty]
 **clear B
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-theBinding{?y0=C, ?x0=B, ?x1=B}
-Key = B Value = C
 [clear A, clear B, clear C, ontable A, ontable B, ontable C, ontable pyramid, handEmpty]
 *** GOALS ***[handEmpty]
 **handEmpty
-theBinding{?y0=C, ?x0=B, ?x1=B}
-Key = B Value = C
-Success !
-Success !
-副目標達成
-pick up B from the table
-newOperator = NAME: pick up B from the table
-IF :[handEmpty]
-ADD:[holding B]
-DELETE:[ontable B, clear B, handEmpty]
-Success !
-副目標達成
-Place B on C
-newOperator = NAME: Place B on C
-IF :[holding B]
-ADD:[B on C, clear B, handEmpty]
-DELETE:[clear C, holding B]
 [clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[A on B]
 **A on B
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
 現在の目標
 A on B
 現在の状態
-clear A
-ontable A
-ontable C
-ontable pyramid
-B on C
-clear B
-handEmpty
+[clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 おすすめは = Place ?x on ?y
 行う操作を入力してください
 Place A on B
 オペレータ内容は = Place ?x on ?y
-Thank you!
-選択したオペレータ0:
-NAME: Place ?x2 on ?y2
-IF :[clear ?y2, holding ?x2]
-ADD:[?x2 on ?y2, clear ?x2, handEmpty]
-DELETE:[clear ?y2, holding ?x2]
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-varMatchingで...?x2とA
-productKeyOnValueで...{B=C}
-keyOnValue[0] = A
-varMatchingで...?y2とB
-productKeyOnValueで...{B=C}
-keyOnValue[1] = B
-productKeyOnValue = {A=B, B=C}
-Init_Key(str) = A
-Init_Key(str) = B
-Init_Key(str) = C
-Key = A Value = B
-Key = B Value = C
 unify成功
 オペレータの具体化:Place A on B
-その時の状態:[clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[clear B, holding A]
 **clear B
-theBinding{?y0=C, ?x0=B, ?x1=B, ?y2=B, ?x2=A}
-Key = A Value = B
-Key = B Value = C
 [clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[holding A]
 **holding A
 現在の目標
 holding A
 現在の状態
-clear A
-ontable A
-ontable C
-ontable pyramid
-B on C
-clear B
-handEmpty
+[clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 おすすめは = pick up ?x from the table
 行う操作を入力してください
 pick up A from the table
 オペレータ内容は = pick up ?x from the table
-Thank you!
-選択したオペレータ2:
-NAME: pick up ?x3 from the table
-IF :[ontable ?x3, clear ?x3, handEmpty]
-ADD:[holding ?x3]
-DELETE:[ontable ?x3, clear ?x3, handEmpty]
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-varMatchingで...?x3とA
-productKeyOnValueで...{A=B, B=C}
-Init_Key(str) = A
-Init_Key(str) = B
-Init_Key(str) = C
-Key = A Value = B
-Key = B Value = C
 unify成功
 オペレータの具体化:pick up A from the table
-その時の状態:[clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[ontable A, clear A, handEmpty]
 **ontable A
-unify内:keyProhibit{A=[A], B=[A, B], C=[A, C]}
-theBinding{?y0=C, ?x0=B, ?x1=B, ?y2=B, ?x2=A, ?x3=A}
-Key = A Value = B
-Key = B Value = C
 [clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[clear A, handEmpty]
 **clear A
-theBinding{?y0=C, ?x0=B, ?x1=B, ?y2=B, ?x2=A, ?x3=A}
-Key = A Value = B
-Key = B Value = C
 [clear A, ontable A, ontable C, ontable pyramid, B on C, clear B, handEmpty]
 *** GOALS ***[handEmpty]
 **handEmpty
-theBinding{?y0=C, ?x0=B, ?x1=B, ?y2=B, ?x2=A, ?x3=A}
-Key = A Value = B
-Key = B Value = C
-Success !
-Success !
-副目標達成
-pick up A from the table
-newOperator = NAME: pick up A from the table
-IF :[handEmpty]
-ADD:[holding A]
-DELETE:[ontable A, clear A, handEmpty]
-Success !
-副目標達成
-Place A on B
-newOperator = NAME: Place A on B
-IF :[holding A]
-ADD:[A on B, clear A, handEmpty]
-DELETE:[clear B, holding A]
-Success !
 ***** This is a plan! *****
 pick up B from the table
 Place B on C
 pick up A from the table
 Place A on B
 \end{lstlisting}
-​
-実際に, 「上に積む」ということだけに関しての最適なオペレータ選択を"おすすめ"として表示し, 現状態と現在の目標を見比べることで, ユーザがオペレータを選択できるようになっている. 
-​
+実際に, 「上に積む」ということだけに関しての最適なオペレータ選択を"おすすめ"として表示し, 現状態と現在の目標を見比べることで, ユーザがオペレータを選択できるようになっている.
+
 \subsection{考察}
 競合解消戦略を上手く取り入れれば, いろいろな初期化や目標状態でも対応できるが, その設定ができなかった. また, ユーザのオペレータ選択に関しても, 一文を見ているのではなく, あくまで「place」や「remove」といった一文字のみを見ているので, おそまつなプログラムであると言わざるを得ない. これからの課題でこの改善策を作っていきたい.
-​
+
 
 \section{発展課題5-7}
 \begin{screen}
@@ -1945,7 +1913,7 @@ Block World Planning.exeを起動したところ，下図のような画面が�
     さらに，もし可能であれば，その自己設定課題を解くプランニングシステムを実装せよ．
 \end{screen}
 本課題では実装までは至らなかったので,プランニング課題のアイデア及び考察のみを記述することとする.
-​
+
 \subsection{考察}
 今回のプランニングシステムを用いた課題として,システム開発のスケジュール自動生成を提案する.システム開発には多数のセクションが存在し,また多数の作業が並行して行われるのでスケジュール表は時間軸と作業分類の二次元的になる.加えて,作業の中には特定の作業が終了してからでないと取りかかれないものもある.\\
 これを今回のプランニング課題に当てはめると,各作業はブロックに,作業順の制約は物理的制約に対応すると考えられ,それらの条件の元適切なスケジュール表を生成する課題は今回のプランニング課題を応用できると考える.
@@ -1954,7 +1922,8 @@ Block World Planning.exeを起動したところ，下図のような画面が�
 % 参考文献
 \begin{thebibliography}{99}
 \bibitem{notty} Javaによる知能プログラミング入門 --著：新谷 虎松 \\
-\bibitem{Swing} Let'sプログラミング　Swingを使ってみよう, \url{https://www.javadrive.jp/tutorial/} （2019年12月8日アクセス）.
+\bibitem{Swing} Let'sプログラミング　Swingを使ってみよう, \url{https://www.javadrive.jp/tutorial/} （2019年12月8日アクセス) \\
+\bibitem{Unity} Unity Technologies.： 『Unity - Manual: Unity User Manual (2019.2)』 \url{https://docs.unity3d.com/Manual/index.html} (2019/12/09アクセス) \\
 \end{thebibliography}
 
 \end{document}
